@@ -20,7 +20,7 @@ app.use(bodyParser.json())
 app.use(routes)
 
 app.use('*',function (req, res, next) {
-  if (req.url === '/favicon.ico') {
+  if (true) {
     // Short-circuit favicon requests
     res.set({'Content-Type': 'image/x-icon'})
     res.status(200)

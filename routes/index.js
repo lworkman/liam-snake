@@ -1,5 +1,7 @@
 var express = require('express')
 var router  = express.Router()
+var customFunctions = require('./functions.js');
+
 
 // Handle POST request to '/start'
 router.post('/start', function (req, res) {
@@ -28,5 +30,7 @@ router.post('/move', function (req, res) {
 
   return res.json(data)
 })
+
+customFunctions.testFunction();
 
 module.exports = router
