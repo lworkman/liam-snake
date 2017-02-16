@@ -1,5 +1,6 @@
 var express = require('express')
 var router  = express.Router()
+var extraFunctions = require("./extraFunctions.js");
 
 // Handle POST request to '/start'
 router.post('/start', function (req, res) {
@@ -24,27 +25,11 @@ router.post('/move', function (req, res) {
 
   // Response data
   var data = {
-    move: randoSnake(), // one of: ['up','down','left','right']
+    move: extraFunctions.randoSnake(), // one of: ['up','down','left','right']
     taunt: 'Get Rekt Jameson', // optional, but encouraged!
   }
 
   return res.json(data)
-})
-
-var randoSnake = function(){
-  var rand = Math.floor((Math.random() * 4) + 1);
-
-  switch(rand){
-    case 1:
-      return 'up';
-    case 2:
-      return 'right';
-    case 3:
-      return 'down';
-    case 4:
-      return 'left';
-  }
-
-};
+});
 
 module.exports = router
