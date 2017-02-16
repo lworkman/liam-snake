@@ -1,4 +1,5 @@
 module.exports = {
+  // Moves randomly
   randoSnake: function () {
     var rand = Math.floor((Math.random() * 4) + 1);
 
@@ -11,6 +12,15 @@ module.exports = {
         return 'down';
         case 4:
         return 'left';
+    }
+  },
+  // Moves up and right in a zig-zag, no matter what
+  dumbSnake: function(var ourSnakeCoordinates){
+    if (ourSnakeCoordinates[0][0] > ourSnakeCoordinates[1][0]){
+      return 'right';
+    }
+    else {
+      return 'up';
     }
   }
 };
