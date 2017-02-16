@@ -15,7 +15,7 @@ module.exports = {
     }
   },
   // Moves up and right in a zig-zag, no matter what
-  dumbSnake: function(var ourSnakeCoordinates){
+  dumbSnake: function(ourSnakeCoordinates){
     if (ourSnakeCoordinates[0][0] > ourSnakeCoordinates[1][0]){
       return 'right';
     }
