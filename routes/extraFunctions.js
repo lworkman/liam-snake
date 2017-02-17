@@ -101,7 +101,7 @@ var dontHitWall = function(head,width,height){
 
     var moves = {"left": 0, "right": 0, "up": 0, "down": 0};
     var chosenMove = "up";
-    var chosenMoveScore = 0;
+    var chosenMoveScore = -1;
 
     if (head[0] + 1 >= width){
       moves.right = -1;
@@ -110,15 +110,16 @@ var dontHitWall = function(head,width,height){
       moves.left = -1;
     }
     if (head[1] + 1 >= height){
-      moves.up = -1;
+      moves.down = -1;
     }
     if (head[1] - 1 < 0){
-      moves.down = -1;
+      moves.up = -1;
     }
 
     for(property in moves){
       if (chosenMoveScore < moves[property]){
         chosenMove = property;
+        chosenMoveScore = move[property];
       }
     }
 
