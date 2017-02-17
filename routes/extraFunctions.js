@@ -18,7 +18,7 @@ var extraFunctions = {
   },
   // Moves up and right in a zig-zag, no matter what
   dumbSnake: function (ourSnakeCoordinates) {
-    if (ourSnakeCoordinates[0][0] > ourSnakeCoordinates[1][0]) {
+    if (ourSnakeCoordinates[0][0] < ourSnakeCoordinates[1][0]) {
       return 'right';
     }
     else {
