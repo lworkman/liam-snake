@@ -9,7 +9,7 @@ router.post('/start', function (req, res) {
   var inputs = req.query;
   // Response data
   var data = {
-    color: "#DFFF00",
+    color: "#8d6db1",
     name: "Was Once A Man",
     head_url: "http://www.placecage.com/c/200/200", // optional, but encouraged!
     taunt: "Cobra LALALALALALALALALA!", // optional, but encouraged!
