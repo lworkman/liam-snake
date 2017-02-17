@@ -20,7 +20,7 @@ var createBaseSnake = function(requestBody){
     snakeBodies = snakeBodies.concat(requestBody.snakes[i].coords);
   }
 
-  move = whichMove(head,snakeBodies);
+  move = whichMove(head,snakeBodies,requestBody.width,requestBody.height);
 
   return Object.create(baseSnake,{
     // Insert properties of the base snake object here
@@ -80,18 +80,34 @@ var figureOutDistances = function(head,positionOfStuff){
   return moves;
 };
 
-var whichMove = function(head,positionOfStuff){
+var whichMove = function(head,positionOfStuff,width,height){
 	var chosenMove = "up";
   var chosenMoveScore = 0;
-  var whichMove = figureOutDistances(head,positionOfStuff);
+  var whichMoveHolder = figureOutDistances(head,positionOfStuff);
+  dontHitWall(head,width,height,whichMoveHolder);
   
-  for(property in whichMove){
-  	if (chosenMoveScore < whichMove[property]){
+  for(property in whichMoveHolder){
+  	if (chosenMoveScore < whichMoveHolder[property]){
     	chosenMove = property;
     }
   }
   
    return chosenMove;
+}
+
+var dontHitWall = function(head,width,height,whichMoveHolder){
+    if (head[0] + 1 >= width){
+      whichMoveHolder.right = -1;
+    }
+    if (head[0] - 1 < 0){
+      whichMoveHolder.left = -1;
+    }
+    if (head[1] + 1 >= height){
+      whichMoveHolder.up = -1;
+    }
+    if (head[1] - 1 < 0){
+      whichMoveHolder.down = -1;
+    }
 }
 
 var differentSnakes = {
