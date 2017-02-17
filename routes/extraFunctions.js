@@ -9,6 +9,8 @@ var moves = ["up","down","left","right"];
 var createBaseSnake = function(requestBody){
 
   id = requestBody.you;
+
+
   var body = requestBody.snakes.find(findOurSnakeFromArray);
   var head = body.coords[0];
   var indexOfBody = requestBody.snakes.indexOf(body);
@@ -119,7 +121,7 @@ var dontHitWall = function(head,width,height){
     for(property in moves){
       if (chosenMoveScore < moves[property]){
         chosenMove = property;
-        chosenMoveScore = move[property];
+        chosenMoveScore = moves[property];
       }
     }
 
