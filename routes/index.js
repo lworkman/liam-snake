@@ -13,7 +13,6 @@ router.post('/start', function (req, res) {
     name: "Was Once A Man",
     head_url: "http://www.placecage.com/c/200/200", // optional, but encouraged!
     taunt: "Cobra LALALALALALALALALA!", // optional, but encouraged!
-    params: inputs,
   }
 
   return res.json(data)
