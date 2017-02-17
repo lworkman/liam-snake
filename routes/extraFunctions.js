@@ -2,21 +2,36 @@
 
 var baseSnake = { };
 var id = "";
+var moves = ["up","down","left","right"];
 
 // Constructor for the base snake. Takes in the request body.
 
 var createBaseSnake = function(requestBody){
+
   id = requestBody.you;
+  var body = requestBody.snakes.find(findOurSnakeFromArray);
+  var head = body.coords[0];
+  var indexOfBody = requestBody.snakes.indexOf(body);
+  var snakeBodies = [];
+
+  requestBody.snakes[indexOfBody].coords.splice(0,1);
+
+  for (var i = 0; i< requestBody.snakes.length; i++){
+    snakeBodies = snakeBodies.concat(requestBody.snakes[i].coords);
+  }
+
+  move = whichMove(head,snakeBodies);
+
   return Object.create(baseSnake,{
     // Insert properties of the base snake object here
     myID : {
       value: id
     },
     myBody : {
-      value: requestBody.snakes.find(findOurSnakeFromArray)
+      value: body
     },
     myMove : {
-      value: "up"
+      value: move
     }
   })
 };
@@ -26,6 +41,58 @@ var createBaseSnake = function(requestBody){
 var findOurSnakeFromArray = function (snakeObj) {
     return snakeObj.id == id;
   };
+
+var howManyMoves = function(point,obstacle){
+	var moves = 0;
+  moves += Math.abs(point[0]-obstacle[0]);
+  moves += Math.abs(point[1]-obstacle[1]);
+  
+  if (moves == 0){
+ 		return -100000;
+  }
+	return moves * 10;
+};
+
+var figureOutDistances = function(head,positionOfStuff){
+
+  var moves = {"left": 0, "right": 0, "up": 0, "down": 0};
+  
+  var leftMove = [head[0]-1,head[1]];
+  var rightMove = [head[0]+1,head[1]];
+  var upMove = [head[0],head[1]-1];
+  var downMove = [head[0],head[1]+1];
+  
+  for (var i = 0; i < positionOfStuff.length; i++){ 	
+    if (moves.left >= 0){
+  		moves.left += Math.floor(howManyMoves(leftMove,positionOfStuff[i]));
+    }
+    if (moves.right >= 0){
+  		moves.right += Math.floor(howManyMoves(rightMove,positionOfStuff[i]));
+    }
+    if (moves.up >= 0){
+  		moves.up += Math.floor(howManyMoves(upMove,positionOfStuff[i]));
+    }
+    if (moves.down >= 0){
+  		moves.down += Math.floor(howManyMoves(downMove,positionOfStuff[i]))  
+    };
+  }
+  
+  return moves;
+};
+
+var whichMove = function(head,positionOfStuff){
+	var chosenMove = "up";
+  var chosenMoveScore = 0;
+  var whichMove = figureOutDistances(head,positionOfStuff);
+  
+  for(property in whichMove){
+  	if (chosenMoveScore < whichMove[property]){
+    	chosenMove = property;
+    }
+  }
+  
+   return chosenMove;
+}
 
 var differentSnakes = {
 
