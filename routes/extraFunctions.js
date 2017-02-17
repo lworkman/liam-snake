@@ -1,6 +1,33 @@
-var extraFunctions = {
+// Variables needed to create the base snake used by all snakes
 
-  ourSnakeID: '',
+var baseSnake = { };
+var id = "";
+
+// Constructor for the base snake. Takes in the request body.
+
+var createBaseSnake = function(requestBody){
+  id = requestBody.you;
+  return Object.create(baseSnake,{
+    // Insert properties of the base snake object here
+    myID : {
+      value: id
+    },
+    myBody : {
+      value: requestBody.snakes.find(findOurSnakeFromArray)
+    },
+    myMove : {
+      value: "up"
+    }
+  })
+};
+
+// Figures out which snake you are from the returned snakes
+
+var findOurSnakeFromArray = function (snakeObj) {
+    return snakeObj.id == id;
+  };
+
+var differentSnakes = {
 
   //====================
   // SNAKE AI
@@ -30,7 +57,7 @@ var extraFunctions = {
    * Moves up and right in a zig-zag, no matter what
    *
    * @param ourSnakeCoordinates
-   * @returns {*}
+   * @returns your move
    */
   dumbSnake: function (ourSnakeCoordinates) {
     if (ourSnakeCoordinates[0][0] < ourSnakeCoordinates[0][1]) {
@@ -41,21 +68,20 @@ var extraFunctions = {
     }
   },
 
-  //=========================
-  // HELPER FUNCTIONS
-  //=========================
-  /**
-   * Function used by find() on the array of snakes pass on POST /move to get OUR snake object from the list.
-   *
-   * Given a snake object, return true if that snake's ID is ours.
-   *
-   * @param snakeObj
-   * @returns {boolean}
-   */
-  findOurSnakeFromArray: function (snakeObj) {
-    return snakeObj.id == extraFunctions.ourSnakeID;
+  /** 
+   * Example snake for using the constructor. Will probably never be used.
+   * 
+   * @param the body of the request
+   * @returns your move
+  */
+
+  funSnake: function (requestBody){
+
+    var thisSnake = createBaseSnake(requestBody);
+
+    return thisSnake.myMove;
   }
 
 };
 
-module.exports = extraFunctions;
+module.exports = differentSnakes;

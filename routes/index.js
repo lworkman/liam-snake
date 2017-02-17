@@ -1,6 +1,6 @@
-var express = require('express')
-var router  = express.Router()
-var extraFunctions = require("./extraFunctions.js");
+var express = require('express');
+var router  = express.Router();
+var differentSnakes = require("./extraFunctions.js");
 
 // Handle POST request to '/start'
 router.post('/start', function (req, res) {
@@ -22,17 +22,16 @@ router.post('/start', function (req, res) {
 router.post('/move', function (req, res) {
   // NOTE: Do something here to generate your move
 
-  extraFunctions.ourSnakeID = req.body.you;
+  //extraFunctions.ourSnakeID = req.body.you;
 
-  var ourSnake = req.body.snakes.find(extraFunctions.findOurSnakeFromArray);
-
+  //var ourSnake = req.body.snakes.find(extraFunctions.findOurSnakeFromArray);
   // Response data
   var data = {
-    move: extraFunctions.dumbSnake(ourSnake.coords), // one of: ['up','down','left','right']
+    move: differentSnakes.funSnake(req.body), // one of: ['up','down','left','right']
     taunt: 'Get Rekt Jameson', // optional, but encouraged!
   }
 
   return res.json(data)
 });
 
-module.exports = router
+module.exports = router;
