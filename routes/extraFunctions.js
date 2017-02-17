@@ -16,15 +16,15 @@ var createBaseSnake = function(requestBody){
   var indexOfBody = requestBody.snakes.indexOf(body);
   var snakeBodies = [];
 
-  requestBody.snakes[indexOfBody].coords.splice(0,1);
+  // requestBody.snakes[indexOfBody].coords.splice(0,1);
 
-  for (var i = 0; i< requestBody.snakes.length; i++){
-    snakeBodies = snakeBodies.concat(requestBody.snakes[i].coords);
-  }
+  // for (var i = 0; i< requestBody.snakes.length; i++){
+  //   snakeBodies = snakeBodies.concat(requestBody.snakes[i].coords);
+  // }
 
   //move = whichMove(head,snakeBodies,requestBody.width,requestBody.height);
 
-  move = dontHitWall(head,requestBody.width,requestBody.height);
+  move = dontHitWall(body.coords,requestBody.width,requestBody.height);
 
   return Object.create(baseSnake,{
     // Insert properties of the base snake object here
@@ -99,24 +99,26 @@ var whichMove = function(head,positionOfStuff,width,height){
    return chosenMove;
 }
 
-var dontHitWall = function(head,width,height){
+var dontHitWall = function(body,width,height){
 
     var moves = {"left": 0, "right": 0, "up": 0, "down": 0};
     var chosenMove = "up";
     var chosenMoveScore = -1;
 
-    if (head[0] + 1 >= width){
+    if (body[0][0] + 1 >= width || body[0][0] + 1 == body[1][0]){
       moves.right = -1;
     }
-    if (head[0] - 1 < 0){
+    if (body[0][0] - 1 < 0 || body[0][0] - 1 == body[1][0]){
       moves.left = -1;
     }
-    if (head[1] + 1 >= height){
+    if (body[0][1] + 1 >= height || body[0][1] + 1 == body[1][1]){
       moves.down = -1;
     }
-    if (head[1] - 1 < 0){
+    if (body[0][1] - 1 < 0 || body[0][1] - 1 == body[1][1]){
       moves.up = -1;
     }
+
+
 
     for(property in moves){
       if (chosenMoveScore < moves[property]){
