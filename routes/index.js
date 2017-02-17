@@ -6,7 +6,7 @@ var extraFunctions = require("./extraFunctions.js");
 router.post('/start', function (req, res) {
   // NOTE: Do something here to start the game
 
-  var inputs = req.query;
+  console.log(req.body);
   // Response data
   var data = {
     color: "#DFFF00",
@@ -22,9 +22,13 @@ router.post('/start', function (req, res) {
 router.post('/move', function (req, res) {
   // NOTE: Do something here to generate your move
 
+  extraFunctions.ourSnakeID = req.body.you;
+
+  var ourSnake = req.body.snakes.find(extraFunctions.findOurSnakeFromArray);
+
   // Response data
   var data = {
-    move: extraFunctions.randoSnake(), // one of: ['up','down','left','right']
+    move: extraFunctions.dumbSnake(ourSnake.coords), // one of: ['up','down','left','right']
     taunt: 'Get Rekt Jameson', // optional, but encouraged!
   }
 
