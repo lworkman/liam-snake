@@ -14,17 +14,42 @@ var createBaseSnake = function(requestBody){
   var body = requestBody.snakes.find(findOurSnakeFromArray);
   var head = body.coords[0];
   var indexOfBody = requestBody.snakes.indexOf(body);
-  var snakeBodies = [];
+  var badThingsPositions = [];
+  var health = 100 / requestBody.snakes[indexOfBody].health_points * 50;
+  var badWalls = [];
+  var goodWalls = [];
 
-  // requestBody.snakes[indexOfBody].coords.splice(0,1);
+  var xWall = -1;
+  var yWall = -1;
 
-  // for (var i = 0; i< requestBody.snakes.length; i++){
-  //   snakeBodies = snakeBodies.concat(requestBody.snakes[i].coords);
-  // }
+  if (head[0] > requestBody.width/2){
+    xWall = requestBody.width;
+  }
+  if (head[1] > requestBody.height/2){
+    yWall = requestBody.height;
+  }
 
-  //move = whichMove(head,snakeBodies,requestBody.width,requestBody.height);
+  for (var i = -1; i <= requestBody.width; i++){
+    badWalls.push([xWall,i]);
+  }
+  for (var i = -1; i <= requestBody.height; i++){
+    badWalls.push([i,yWall]);
+  }
+  for (var i = -1; i <= requestBody.width; i++){
+    goodWalls.push([xWall * -1,i]);
+  }
+  for (var i = -1; i <= requestBody.height; i++){
+    goodWalls.push([i,yWall * -1]);
+  }
 
-  move = dontHitWall(body.coords,requestBody.width,requestBody.height);
+  requestBody.snakes[indexOfBody].coords.splice(0,1);
+
+  for (var i = 0; i< requestBody.snakes.length; i++){
+     badThingsPositions = badThingsPositions.concat(requestBody.snakes[i].coords);
+  }
+  badThingsPositions = badThingsPositions.concat(badWalls);
+
+  move = whichMove(head,badThingsPositions,requestBody.food,goodWalls,health,requestBody.width,requestBody.height);
 
   return Object.create(baseSnake,{
     // Insert properties of the base snake object here
@@ -46,88 +71,106 @@ var findOurSnakeFromArray = function (snakeObj) {
     return snakeObj.id == id;
   };
 
-var howManyMoves = function(point,obstacle){
+var howManyMoves = function(point,obstacle,shouldPursue,multiplier){
 	var moves = 0;
+
   moves += Math.abs(point[0]-obstacle[0]);
   moves += Math.abs(point[1]-obstacle[1]);
-  
-  if (moves == 0){
+  if (moves == 0 && !shouldPursue){
  		return -100000;
   }
-	return moves * 10;
+  else if (shouldPursue){
+    return 100/moves * multiplier;
+  }
+	return 10 * moves;
 };
 
-var figureOutDistances = function(head,positionOfStuff){
+var figureOutDistances = function(head,positionOfStuff,whichMoves,positive,multiplier){
 
-  var moves = {"left": 0, "right": 0, "up": 0, "down": 0};
+  var moves = whichMoves;
   
   var leftMove = [head[0]-1,head[1]];
   var rightMove = [head[0]+1,head[1]];
   var upMove = [head[0],head[1]-1];
   var downMove = [head[0],head[1]+1];
+  var negativeMultiplier = 1;
   
   for (var i = 0; i < positionOfStuff.length; i++){ 	
     if (moves.left >= 0){
-  		moves.left += Math.floor(howManyMoves(leftMove,positionOfStuff[i]));
+  		moves.left += Math.floor(howManyMoves(leftMove,positionOfStuff[i],positive,multiplier));
     }
     if (moves.right >= 0){
-  		moves.right += Math.floor(howManyMoves(rightMove,positionOfStuff[i]));
+  		moves.right += Math.floor(howManyMoves(rightMove,positionOfStuff[i],positive,multiplier));
     }
     if (moves.up >= 0){
-  		moves.up += Math.floor(howManyMoves(upMove,positionOfStuff[i]));
+  		moves.up += Math.floor(howManyMoves(upMove,positionOfStuff[i],positive,multiplier));
     }
     if (moves.down >= 0){
-  		moves.down += Math.floor(howManyMoves(downMove,positionOfStuff[i]))  
+  		moves.down += Math.floor(howManyMoves(downMove,positionOfStuff[i],positive,multiplier));  
     };
   }
   
   return moves;
 };
 
-var whichMove = function(head,positionOfStuff,width,height){
+var whichMove = function(head,positionOfStuff,food,goodWalls,health,width,height){
+
+
 	var chosenMove = "up";
-  var chosenMoveScore = 0;
-  var whichMoveHolder = figureOutDistances(head,positionOfStuff);
-  dontHitWall(head,width,height,whichMoveHolder);
+  var chosenMoveScore = -1;
+  var whichMoveHolder = dontHitWall(head,width,height);
+
+
+  whichMoveHolder = findClosestFoodAndHeadToIt(head,food,whichMoveHolder,health);
+  whichMoveHolder = figureOutDistances(head,positionOfStuff,whichMoveHolder,false,1);
+  //whichMoveHolder = figureOutDistances(head,goodWalls,whichMoveHolder,true,1);
   
+  console.log(whichMoveHolder);
+
   for(property in whichMoveHolder){
   	if (chosenMoveScore < whichMoveHolder[property]){
     	chosenMove = property;
+      chosenMoveScore = whichMoveHolder[property];
     }
   }
   
    return chosenMove;
 }
 
-var dontHitWall = function(body,width,height){
+var findClosestFoodAndHeadToIt = function(head,food,whichMoveHolder,health){
 
-    var moves = {"left": 0, "right": 0, "up": 0, "down": 0};
-    var chosenMove = "up";
-    var chosenMoveScore = -1;
+  moveHolder = whichMoveHolder;
 
-    if (body[0][0] + 1 >= width || body[0][0] + 1 == body[1][0]){
+  moveHolder = figureOutDistances(head,food,whichMoveHolder,true,health);
+
+  // if (health < 50) {
+  //   for(property in moveHolder){
+  //     moveHolder[property] = moveHolder[property] * 10000;
+  //   }
+  // }
+
+  return moveHolder;
+
+}
+
+var dontHitWall = function(head,width,height){
+
+    var moves = {"left": 0, "up": 0, "right": 0, "down": 0};
+
+    if (head[0] + 1 >= width){
       moves.right = -1;
     }
-    if (body[0][0] - 1 < 0 || body[0][0] - 1 == body[1][0]){
+    if (head[0] - 1 < 0){
       moves.left = -1;
     }
-    if (body[0][1] + 1 >= height || body[0][1] + 1 == body[1][1]){
+    if (head[1] + 1 >= height){
       moves.down = -1;
     }
-    if (body[0][1] - 1 < 0 || body[0][1] - 1 == body[1][1]){
+    if (head[1] - 1 < 0){
       moves.up = -1;
     }
 
-
-
-    for(property in moves){
-      if (chosenMoveScore < moves[property]){
-        chosenMove = property;
-        chosenMoveScore = moves[property];
-      }
-    }
-
-    return chosenMove;
+    return moves;
 
 }
 
