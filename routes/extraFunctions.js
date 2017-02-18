@@ -94,6 +94,8 @@ var figureOutDistances = function(head,positionOfStuff,whichMoves,positive,multi
   var upMove = [head[0],head[1]-1];
   var downMove = [head[0],head[1]+1];
   var negativeMultiplier = 1;
+  var holder = [];
+  var intHolder = 0;
   
   for (var i = 0; i < positionOfStuff.length; i++){ 	
     if (moves.left >= 0){
@@ -108,7 +110,26 @@ var figureOutDistances = function(head,positionOfStuff,whichMoves,positive,multi
     if (moves.down >= 0){
   		moves.down += Math.floor(howManyMoves(downMove,positionOfStuff[i],positive,multiplier));  
     };
-  }
+  };
+
+  // if (!positive){
+  //   if (moves.left >= 0){
+  //   moves.left = moves.left * howManyEscapes(leftMove,positionOfStuff);
+  //   console.log("left: "+ howManyEscapes(leftMove,positionOfStuff));
+  //   }
+  //   if (moves.right >= 0){
+  //     moves.right = moves.right * howManyEscapes(rightMove,positionOfStuff);
+  //   console.log("right: "+ howManyEscapes(rightMove,positionOfStuff));
+  //   }
+  //   if (moves.up >= 0){
+  //     moves.up = moves.up * howManyEscapes(upMove,positionOfStuff);
+  //   console.log("up: "+ howManyEscapes(upMove,positionOfStuff));
+  //   }
+  //   if (moves.down >= 0){
+  //     moves.down = moves.down * howManyEscapes(downMove,positionOfStuff); 
+  //   console.log("down: "+ howManyEscapes(downMove,positionOfStuff));
+  //   };
+  // }
   
   return moves;
 };
@@ -143,14 +164,29 @@ var findClosestFoodAndHeadToIt = function(head,food,whichMoveHolder,health){
 
   moveHolder = figureOutDistances(head,food,whichMoveHolder,true,health);
 
-  // if (health < 50) {
-  //   for(property in moveHolder){
-  //     moveHolder[property] = moveHolder[property] * 10000;
-  //   }
-  // }
-
   return moveHolder;
 
+}
+
+var howManyEscapes = function (point,badThings){
+
+  var potentialEscapes = {"left":[point[0]-1,point[1]],"right":[point[0]+1,point[1]],"up":[point[0],point[1]-1],"down":[point[0],point[1]+1]}
+  var intHolder = 0;
+
+  for (property in potentialEscapes){
+    for (var i = 0; i < badThings.length; i++){
+      if (potentialEscapes[property][0] == badThings[i][0]){     
+        if (potentialEscapes[property][1] == badThings[i][1]){
+          potentialEscapes[property] = [-1,-1];
+        }
+      }
+    }
+    if (potentialEscapes[property][0] != -1){
+      intHolder ++;
+    }
+  }
+
+  return intHolder;
 }
 
 var dontHitWall = function(head,width,height){
