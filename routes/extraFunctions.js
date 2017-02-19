@@ -1,5 +1,7 @@
 // Variables needed to create the base snake used by all snakes
 
+var aStarSnakes = require("./a_star/a_start.js");
+
 var baseSnake = { };
 var id = "";
 var moves = ["up","down","left","right"];
@@ -16,40 +18,19 @@ var createBaseSnake = function(requestBody){
   var indexOfBody = requestBody.snakes.indexOf(body);
   var badThingsPositions = [];
   var health = 100 / requestBody.snakes[indexOfBody].health_points * 50;
-  var badWalls = [];
-  var goodWalls = [];
-
-  var xWall = -1;
-  var yWall = -1;
-
-  if (head[0] > requestBody.width/2){
-    xWall = requestBody.width;
-  }
-  if (head[1] > requestBody.height/2){
-    yWall = requestBody.height;
-  }
-
-  for (var i = -1; i <= requestBody.width; i++){
-    badWalls.push([xWall,i]);
-  }
-  for (var i = -1; i <= requestBody.height; i++){
-    badWalls.push([i,yWall]);
-  }
-  for (var i = -1; i <= requestBody.width; i++){
-    goodWalls.push([xWall * -1,i]);
-  }
-  for (var i = -1; i <= requestBody.height; i++){
-    goodWalls.push([i,yWall * -1]);
-  }
 
   requestBody.snakes[indexOfBody].coords.splice(0,1);
+  requestBody.snakes[indexOfBody].coords.splice(requestBody.snakes[indexOfBody].coords.length,1);
 
   for (var i = 0; i< requestBody.snakes.length; i++){
      badThingsPositions = badThingsPositions.concat(requestBody.snakes[i].coords);
   }
-  badThingsPositions = badThingsPositions.concat(badWalls);
 
-  move = whichMove(head,badThingsPositions,requestBody.food,goodWalls,health,requestBody.width,requestBody.height);
+  var areaAroundOwnBody = 20;
+
+  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,requestBody.food[0],badThingsPositions);
+
+  move = whichDirection(head,astar);
 
   return Object.create(baseSnake,{
     // Insert properties of the base snake object here
@@ -65,148 +46,162 @@ var createBaseSnake = function(requestBody){
   })
 };
 
+var whichDirection = function(head,point){
+
+  if (head[0] < point[0]){
+    return "right";
+  }
+  if (head[0] > point[0]){
+    return "left";
+  }
+  if (head[1] < point[1]){
+    return "down";
+  }
+  if (head[1] > point[1]){
+    return "up";
+  }
+
+}
+
+var findAreaAroundPoint = function(point){
+  var returnPoint = [];
+  returnPoint.push([point[0],point[1]-1]);
+  returnPoint.push([point[0],point[1]+1]);
+  returnPoint.push([point[0]-1,point[1]]);
+  returnPoint.push([point[0]+1,point[1]]);
+
+  return returnPoint;
+}
+
 // Figures out which snake you are from the returned snakes
 
 var findOurSnakeFromArray = function (snakeObj) {
     return snakeObj.id == id;
   };
 
-var howManyMoves = function(point,obstacle,shouldPursue,multiplier){
-	var moves = 0;
 
-  moves += Math.abs(point[0]-obstacle[0]);
-  moves += Math.abs(point[1]-obstacle[1]);
-  if (moves == 0 && !shouldPursue){
- 		return -100000;
-  }
-  else if (shouldPursue){
-    return 100/moves * multiplier;
-  }
-	return 10 * moves;
-};
+/**
+ * Attempts to fill in areas:
+ */
 
-var figureOutDistances = function(head,positionOfStuff,whichMoves,positive,multiplier){
+var directions = ["up","right","down","left"];
+var freeSpace;
+var point = [];
+var chosenLast;
+var obstacles = [];
+var chosen;
+var overflow = 0;
 
-  var moves = whichMoves;
-  
-  var leftMove = [head[0]-1,head[1]];
-  var rightMove = [head[0]+1,head[1]];
-  var upMove = [head[0],head[1]-1];
-  var downMove = [head[0],head[1]+1];
-  var negativeMultiplier = 1;
-  var holder = [];
-  var intHolder = 0;
-  
-  for (var i = 0; i < positionOfStuff.length; i++){ 	
-    if (moves.left >= 0){
-  		moves.left += Math.floor(howManyMoves(leftMove,positionOfStuff[i],positive,multiplier));
-    }
-    if (moves.right >= 0){
-  		moves.right += Math.floor(howManyMoves(rightMove,positionOfStuff[i],positive,multiplier));
-    }
-    if (moves.up >= 0){
-  		moves.up += Math.floor(howManyMoves(upMove,positionOfStuff[i],positive,multiplier));
-    }
-    if (moves.down >= 0){
-  		moves.down += Math.floor(howManyMoves(downMove,positionOfStuff[i],positive,multiplier));  
-    };
-  };
-
-  // if (!positive){
-  //   if (moves.left >= 0){
-  //   moves.left = moves.left * howManyEscapes(leftMove,positionOfStuff);
-  //   console.log("left: "+ howManyEscapes(leftMove,positionOfStuff));
-  //   }
-  //   if (moves.right >= 0){
-  //     moves.right = moves.right * howManyEscapes(rightMove,positionOfStuff);
-  //   console.log("right: "+ howManyEscapes(rightMove,positionOfStuff));
-  //   }
-  //   if (moves.up >= 0){
-  //     moves.up = moves.up * howManyEscapes(upMove,positionOfStuff);
-  //   console.log("up: "+ howManyEscapes(upMove,positionOfStuff));
-  //   }
-  //   if (moves.down >= 0){
-  //     moves.down = moves.down * howManyEscapes(downMove,positionOfStuff); 
-  //   console.log("down: "+ howManyEscapes(downMove,positionOfStuff));
-  //   };
-  // }
-  
-  return moves;
-};
-
-var whichMove = function(head,positionOfStuff,food,goodWalls,health,width,height){
-
-
-	var chosenMove = "up";
-  var chosenMoveScore = -1;
-  var whichMoveHolder = dontHitWall(head,width,height);
-
-
-  whichMoveHolder = findClosestFoodAndHeadToIt(head,food,whichMoveHolder,health);
-  whichMoveHolder = figureOutDistances(head,positionOfStuff,whichMoveHolder,false,1);
-  //whichMoveHolder = figureOutDistances(head,goodWalls,whichMoveHolder,true,1);
-  
-  console.log(whichMoveHolder);
-
-  for(property in whichMoveHolder){
-  	if (chosenMoveScore < whichMoveHolder[property]){
-    	chosenMove = property;
-      chosenMoveScore = whichMoveHolder[property];
-    }
-  }
-  
-   return chosenMove;
+for (var i = 0; i < 10; i ++){
+	obstacles.push([-1,i]);
+  obstacles.push([i,-1]);
+  obstacles.push([10,i]);
+  obstacles.push([i,10]);
 }
 
-var findClosestFoodAndHeadToIt = function(head,food,whichMoveHolder,health){
+function changeDirections(directionChosen){
 
-  moveHolder = whichMoveHolder;
-
-  moveHolder = figureOutDistances(head,food,whichMoveHolder,true,health);
-
-  return moveHolder;
-
+    directionChosen ++;
+  	if (directionChosen >= directions.length){
+    	directionChosen = 0;
+    }
+    return directionChosen;
 }
 
-var howManyEscapes = function (point,badThings){
+function pointExists(direction){
 
-  var potentialEscapes = {"left":[point[0]-1,point[1]],"right":[point[0]+1,point[1]],"up":[point[0],point[1]-1],"down":[point[0],point[1]+1]}
-  var intHolder = 0;
-
-  for (property in potentialEscapes){
-    for (var i = 0; i < badThings.length; i++){
-      if (potentialEscapes[property][0] == badThings[i][0]){     
-        if (potentialEscapes[property][1] == badThings[i][1]){
-          potentialEscapes[property] = [-1,-1];
+		var pointCheck = [];
+    
+		switch(direction){
+    	case "up":
+      	pointCheck[0] = point[0];
+      	pointCheck[1] = point[1]-1;
+      	break;
+    	case "right":
+      	pointCheck[0] = point[0]+1;
+      	pointCheck[1] = point[1];
+      	break;
+    	case "down":
+      	pointCheck[0] = point[0];
+      	pointCheck[1] = point[1]+1;
+      	break;
+    	case "left":
+      	pointCheck[0] = point[0]-1;
+      	pointCheck[1] = point[1];
+      	break;
+    }
+    for (var i = 0; i < obstacles.length; i++){
+      if (pointCheck[0] == obstacles[i][0]){
+        if (pointCheck[1] == obstacles[i][1]){
+          //console.log(pointCheck + " " + obstacles[i]);
+          return true;
         }
       }
     }
-    if (potentialEscapes[property][0] != -1){
-      intHolder ++;
-    }
-  }
-
-  return intHolder;
 }
 
-var dontHitWall = function(head,width,height){
+function movePoint(direction){
 
-    var moves = {"left": 0, "up": 0, "right": 0, "down": 0};
+	obstacles.push(point);
 
-    if (head[0] + 1 >= width){
-      moves.right = -1;
-    }
-    if (head[0] - 1 < 0){
-      moves.left = -1;
-    }
-    if (head[1] + 1 >= height){
-      moves.down = -1;
-    }
-    if (head[1] - 1 < 0){
-      moves.up = -1;
-    }
+	switch(direction){
+  	case "up":
+    	point = [point[0],point[1]-1];
+    	break;
+  	case "right":
+    	point = [point[0]+1,point[1]];
+    	break;
+  	case "down":
+    	point = [point[0],point[1]+1];
+    	break;
+  	case "left":
+    	point = [point[0]-1,point[1]];
+    	break;
+  }
+}
 
-    return moves;
+function moveClockwise(){
+  
+  if (pointExists(directions[0]) && pointExists(directions[1]) && pointExists(directions[2]) && pointExists(directions[3])){
+ 	 return false;
+  }
+  
+  if (pointExists(directions[chosenLast]) && pointExists(directions[chosen])){
+    chosenLast = chosen;
+    chosen = changeDirections(chosen);
+  }
+  else if (pointExists(directions[chosenLast])){
+  	freeSpace ++;
+  	movePoint(directions[chosen]);
+  }
+  else {
+  	freeSpace ++;
+  	movePoint(directions[0]);
+  }
+  
+  return true;
+  
+}
+
+function letsKeepMoving(head,badThings){
+
+  obstacles = [];
+
+  for (var i = 0; i < badThings.length; i++){
+    obstacles.push(badThings[i]);
+  }
+  point[0] = head[0];
+  point[1] = head[1];
+
+  chosenLast = 0;
+  chosen = 1;
+  freeSpace = 0;
+  overflow = 0;
+  
+  while (overflow < 500){
+  	moveClockwise();
+    overflow ++;
+  }
 
 }
 
