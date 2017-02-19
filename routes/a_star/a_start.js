@@ -377,34 +377,84 @@ BinaryHeap.prototype = {
   }
 };
 
-function findShortestPathWithLevels(width,height,head,food,obstacles){
+var findAreaAroundPoint = function(point,height,width){
+  var returnPoint = [];
+
+  pointHolder = [point[0],point[1]];
+
+  if (pointHolder[1]+1 < height){
+    returnPoint.push([pointHolder[0],pointHolder[1]+1]);
+  }
+  if (pointHolder[1]-1 > 0){
+     returnPoint.push([pointHolder[0],pointHolder[1]-1]);
+  }
+  if (pointHolder[0]+1 < width){
+    returnPoint.push([pointHolder[0]+1,pointHolder[1]]);
+  }
+  if (pointHolder[0]-1 > 0){
+  returnPoint.push([pointHolder[0]-1,pointHolder[1]]);
+  }
+  return returnPoint;
+}
+
+var findAreasAroundBody = function(body,height,width){
+  var returnPoint = [];
+
+  for (var i = 0; i<body.length;i++){
+    returnPoint = returnPoint.concat(findAreaAroundPoint(body[i],height,width));
+  }
+
+  return returnPoint;
+
+}
+
+var addArrayToGraph = function(graph,gridArray,priority){
+
+    var holderGraph = graph;
+
+    for (var i = 0; i< gridArray.length; i++){
+
+
+        holderGraph[gridArray[i][0]][gridArray[i][1]] = priority;
+    }
+
+    return holderGraph;
+}
+
+function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,walls){
     var graph = [];
 
-    for(var y = 0; y <= height + 1; y++){
+    var priority = {"empty": 1, "full": 0, "nearSelf": 1 + (1/ownBody.length), "nearOthers": 3, "nearWalls": 4};
+
+    for(var y = 0; y < height; y++){
         var row = [];
-        for (var x = 0; x <= width + 1; x++){
-            if (x == 0 || y == 0 || x == width+1 || y == height+1){
-                row.push(0);
+        for (var x = 0; x < width; x++){
+            if (x == 0 || x == width-1 || y == 0 || y == height-1){
+                row.push(priority.nearWalls)
             }
-            row.push(1);
+            else {
+                row.push(priority.empty);
+            }
         }
         graph.push(row);
     }
 
-    for (var i = 0; i< obstacles.length; i++){
-        graph[obstacles[i][0]+1][obstacles[i][1]+1] = 0;
-    }
+    var areaAroundOtherSnakes = findAreasAroundBody(badSnakes,height,width);
+    var areaAroundSelf = findAreasAroundBody(ownBody,height,width);
+
+    graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
+    //graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
+    graph = addArrayToGraph(graph,ownBody,priority.full);
+    graph = addArrayToGraph(graph,badSnakes,priority.full);
 
     graph = new Graph(graph);
 
-    var start = graph.grid[head[0]+1][head[1]+1];
-    var end = graph.grid[food[0]+1][food[1]+1];
+    var start = graph.grid[head[0]][head[1]];
+    var end = graph.grid[food[0]][food[1]];
 
     var result = astar.search(graph,start,end);
 
-    console.log(result[0]);
-
-    var nextPoint = [result[0].x-1,result[0].y-1];
+    var nextPoint = [result[0].x,result[0].y];
 
     return nextPoint;
 }
@@ -418,8 +468,8 @@ function findShortestPathWithLevels(width,height,head,food,obstacles){
 
 var astarSnakes = {
 
-    astarSnake: function(width,height,head,food,obstacles){
-        return findShortestPathWithLevels(width,height,head,food,obstacles);
+    astarSnake: function(width,height,head,food,badSnakes,ownBody,walls){
+        return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,walls);
     }
 
 }

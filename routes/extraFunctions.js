@@ -16,19 +16,25 @@ var createBaseSnake = function(requestBody){
   var body = requestBody.snakes.find(findOurSnakeFromArray);
   var head = body.coords[0];
   var indexOfBody = requestBody.snakes.indexOf(body);
-  var badThingsPositions = [];
+  var badSnakes = [];
+  var walls = [];
   var health = 100 / requestBody.snakes[indexOfBody].health_points * 50;
 
-  requestBody.snakes[indexOfBody].coords.splice(0,1);
-  requestBody.snakes[indexOfBody].coords.splice(requestBody.snakes[indexOfBody].coords.length,1);
+  requestBody.snakes.splice(indexOfBody,1);
 
   for (var i = 0; i< requestBody.snakes.length; i++){
-     badThingsPositions = badThingsPositions.concat(requestBody.snakes[i].coords);
+     badSnakes = badSnakes.concat(requestBody.snakes[i].coords);
+  }
+  for (var i = 0; i<requestBody.height;i++){
+    walls.push([-1,i]);
+    walls.push([requestBody.width+1,i]);
+  }
+  for (var i = 0; i<requestBody.width;i++){
+    walls.push([i,-1]);
+    walls.push([i,requestBody.height+1]);
   }
 
-  var areaAroundOwnBody = 20;
-
-  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,requestBody.food[0],badThingsPositions);
+  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,requestBody.food[0],badSnakes,body.coords,walls);
 
   move = whichDirection(head,astar);
 
@@ -61,16 +67,6 @@ var whichDirection = function(head,point){
     return "up";
   }
 
-}
-
-var findAreaAroundPoint = function(point){
-  var returnPoint = [];
-  returnPoint.push([point[0],point[1]-1]);
-  returnPoint.push([point[0],point[1]+1]);
-  returnPoint.push([point[0]-1,point[1]]);
-  returnPoint.push([point[0]+1,point[1]]);
-
-  return returnPoint;
 }
 
 // Figures out which snake you are from the returned snakes
