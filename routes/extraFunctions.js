@@ -17,7 +17,7 @@ var createBaseSnake = function(requestBody){
   var head = body.coords[0];
   var indexOfBody = requestBody.snakes.indexOf(body);
   var badSnakes = [];
-  var walls = [];
+  var thingsThatWillDisappear = [];
   var health = 100 / requestBody.snakes[indexOfBody].health_points * 50;
 
   requestBody.snakes.splice(indexOfBody,1);
@@ -25,16 +25,10 @@ var createBaseSnake = function(requestBody){
   for (var i = 0; i< requestBody.snakes.length; i++){
      badSnakes = badSnakes.concat(requestBody.snakes[i].coords);
   }
-  for (var i = 0; i<requestBody.height;i++){
-    walls.push([-1,i]);
-    walls.push([requestBody.width+1,i]);
-  }
-  for (var i = 0; i<requestBody.width;i++){
-    walls.push([i,-1]);
-    walls.push([i,requestBody.height+1]);
-  }
 
-  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,requestBody.food[0],badSnakes,body.coords,walls);
+  thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords,body.coords.length));
+
+  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,requestBody.food[0],badSnakes,body.coords,thingsThatWillDisappear);
 
   move = whichDirection(head,astar);
 
@@ -75,6 +69,26 @@ var findOurSnakeFromArray = function (snakeObj) {
     return snakeObj.id == id;
   };
 
+var howFarAwayFromHead = function(head,point){
+  distanceHolder = 0;
+
+  distanceHolder += Math.abs(head[0]-point[0]);
+  distanceHolder += Math.abs(head[1]-point[1]);
+
+  return distanceHolder;
+}
+
+var disappearByTimeSnakeGetsThere = function(head,obstacles,length){
+  holder = [];
+  for(var i = 0;i<obstacles.length;i++){
+
+    if (howFarAwayFromHead(head,obstacles[i]) > length-i){
+      holder.push(obstacles[i]);
+    }
+  }
+
+  return holder;
+}
 
 /**
  * Attempts to fill in areas:

@@ -412,19 +412,20 @@ var addArrayToGraph = function(graph,gridArray,priority){
 
     var holderGraph = graph;
 
+    setPriority = priority;
+
     for (var i = 0; i< gridArray.length; i++){
 
-
-        holderGraph[gridArray[i][0]][gridArray[i][1]] = priority;
+        holderGraph[gridArray[i][0]][gridArray[i][1]] = setPriority;
     }
 
     return holderGraph;
 }
 
-function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,walls){
+function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
     var graph = [];
 
-    var priority = {"empty": 1, "full": 0, "nearSelf": 1 + (1/ownBody.length), "nearOthers": 3, "nearWalls": 4};
+    var priority = {"empty": 1, "full": 0, "nearSelf": 1 + (1/ownBody.length), "nearOthers": 3, "nearWalls": 4, "ownBody": 0};
 
     for(var y = 0; y < height; y++){
         var row = [];
@@ -443,9 +444,13 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,wal
     var areaAroundSelf = findAreasAroundBody(ownBody,height,width);
 
     graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
-    //graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
-    graph = addArrayToGraph(graph,ownBody,priority.full);
+    graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
+    graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
+
+    console.log(thingsThatWillDisappear);
+
+    graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
     graph = new Graph(graph);
 
@@ -468,8 +473,8 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,wal
 
 var astarSnakes = {
 
-    astarSnake: function(width,height,head,food,badSnakes,ownBody,walls){
-        return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,walls);
+    astarSnake: function(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
+        return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear);
     }
 
 }
