@@ -425,7 +425,7 @@ var addArrayToGraph = function(graph,gridArray,priority){
 function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
     var graph = [];
 
-    var priority = {"empty": 1, "full": 0, "nearSelf": 1 + (1/ownBody.length), "nearOthers": 3, "nearWalls": 4, "ownBody": 0};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1.1, "nearOthers": 3, "nearWalls": 40, "ownBody": 0};
 
     for(var y = 0; y < height; y++){
         var row = [];
