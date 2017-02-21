@@ -424,6 +424,8 @@ var addArrayToGraph = function(graph,gridArray,priority){
 
 function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
     var graph = [];
+    var nextPoint = [];
+    var pathLength = 1000;
 
     var priority = {"empty": 2, "full": 0, "nearSelf": 1.1, "nearOthers": 3, "nearWalls": 40, "ownBody": 0};
 
@@ -448,20 +450,26 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
 
-    console.log(thingsThatWillDisappear);
-
     graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
     graph = new Graph(graph);
 
     var start = graph.grid[head[0]][head[1]];
-    var end = graph.grid[food[0]][food[1]];
 
-    var result = astar.search(graph,start,end);
+    for (var i = 0; i<food.length;i++){
 
-    var nextPoint = [result[0].x,result[0].y];
+      var end = graph.grid[food[i][0]][food[i][1]];
+      var result = astar.search(graph,start,end);
+
+      if (result.length < pathLength && result.length > 0){
+
+        nextPoint = [result[0].x,result[0].y];
+        pathLength = result.length;
+      }
+    }
 
     return nextPoint;
+
 }
 
 // javascript-astar 0.4.1

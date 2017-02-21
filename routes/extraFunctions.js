@@ -19,6 +19,7 @@ var createBaseSnake = function(requestBody){
   var badSnakes = [];
   var thingsThatWillDisappear = [];
   var health = 100 / requestBody.snakes[indexOfBody].health_points * 50;
+  var goalFood = [];
 
   requestBody.snakes.splice(indexOfBody,1);
 
@@ -27,8 +28,9 @@ var createBaseSnake = function(requestBody){
   }
 
   thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords,body.coords.length));
+  goalFood = reorganizeFood(requestBody.food,head);
 
-  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,requestBody.food[0],badSnakes,body.coords,thingsThatWillDisappear);
+  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,goalFood,badSnakes,body.coords,thingsThatWillDisappear);
 
   move = whichDirection(head,astar);
 
@@ -76,6 +78,33 @@ var howFarAwayFromHead = function(head,point){
   distanceHolder += Math.abs(head[1]-point[1]);
 
   return distanceHolder;
+}
+
+var reorganizeFood = function(food,head){
+  var foodHolder = [];
+  var foodHolderIndex = 0;
+
+  for (var i = 0; i < food.length; i++){
+    foodHolder.push(food[i]);
+  }
+
+  var whichFood = [];
+  var foodScore = 100;
+
+  while (foodHolder.length > 0){
+    foodScore = 0;
+    foodHolderIndex = 0;
+    for (var i = 0; i<foodHolder.length;i++){
+      if (howFarAwayFromHead(head,food[i]) >= foodScore){
+        foodScore = howFarAwayFromHead(head,food[i]);
+        foodHolderIndex = i;
+      }
+    }
+    whichFood.unshift(foodHolder[foodHolderIndex]);
+    foodHolder.splice(foodHolderIndex,1);
+  }
+
+  return whichFood;
 }
 
 var disappearByTimeSnakeGetsThere = function(head,obstacles,length){
