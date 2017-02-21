@@ -452,19 +452,40 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
 
     graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
-    graph = new Graph(graph);
+    var graphObject = new Graph(graph);
 
-    var start = graph.grid[head[0]][head[1]];
+    var start = graphObject.grid[head[0]][head[1]];
 
     for (var i = 0; i<food.length;i++){
 
-      var end = graph.grid[food[i][0]][food[i][1]];
-      var result = astar.search(graph,start,end);
+      var end = graphObject.grid[food[i][0]][food[i][1]];
+      var result = astar.search(graphObject,start,end);
 
       if (result.length < pathLength && result.length > 0){
 
         nextPoint = [result[0].x,result[0].y];
         pathLength = result.length;
+      }
+    }
+
+    if(nextPoint.length == 0){
+      console.log("Stalling!");
+      //Stall - Find shortest path to furthest point on own body.
+      var stallNext = [], stallPoint, stallPath;
+      for(var index in areaAroundSelf){
+        if(areaAroundSelf.hasOwnProperty(index)){
+
+          //When stalling we always want to be doubling back on ourselves. In this case we want to find the shortest path
+          //to the furthest reachable node that is beside our own snake.
+          stallPoint = areaAroundSelf[index];
+          stallPath = astar.search(graphObject,start,graphObject.grid[stallPoint[0]][stallPoint[1]]);
+          if(stallPath.length > 0){
+            stallNext = [stallPath[0].x, stallPath[0].y];
+          }else if(stallNext.length > 0){
+            nextPoint = stallNext;
+            break;
+          }
+        }
       }
     }
 
