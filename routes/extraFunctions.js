@@ -16,19 +16,26 @@ var createBaseSnake = function(requestBody){
   var body = requestBody.snakes.find(findOurSnakeFromArray);
   var head = body.coords[0];
   var indexOfBody = requestBody.snakes.indexOf(body);
-  var badThingsPositions = [];
+  var badSnakes = [];
+  var thingsThatWillDisappear = [];
   var health = 100 / requestBody.snakes[indexOfBody].health_points * 50;
+  var goalFood = [];
 
-  requestBody.snakes[indexOfBody].coords.splice(0,1);
-  requestBody.snakes[indexOfBody].coords.splice(requestBody.snakes[indexOfBody].coords.length,1);
+  requestBody.snakes.splice(indexOfBody,1);
 
   for (var i = 0; i< requestBody.snakes.length; i++){
-     badThingsPositions = badThingsPositions.concat(requestBody.snakes[i].coords);
+     badSnakes = badSnakes.concat(requestBody.snakes[i].coords);
   }
 
-  var areaAroundOwnBody = 20;
+  thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords,body.coords.length));
+  goalFood = reorganizeFood(requestBody.food,head);
 
-  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,requestBody.food[0],badThingsPositions);
+<<<<<<< HEAD
+  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points);
+
+=======
+  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,goalFood,badSnakes,body.coords,thingsThatWillDisappear);
+>>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
 
   move = whichDirection(head,astar);
 
@@ -63,14 +70,26 @@ var whichDirection = function(head,point){
 
 }
 
-var findAreaAroundPoint = function(point){
-  var returnPoint = [];
-  returnPoint.push([point[0],point[1]-1]);
-  returnPoint.push([point[0],point[1]+1]);
-  returnPoint.push([point[0]-1,point[1]]);
-  returnPoint.push([point[0]+1,point[1]]);
+var areWeInATunnel = function(point,obstacles,height,width){
 
-  return returnPoint;
+  var horizontalCovered = 0;
+  var verticalCovered = 0;
+  var directions = ["up","down","left","right"];
+
+  for (var z = 0; z < directions.length; z++){
+    if (pointExists(point,directions[z],obstacles)){
+      if (z < 2){
+        verticalCovered ++
+      }
+      else {
+
+      }
+    }
+  }
+
+  if (sidesCovered == 2){
+    console.log("In a tunnel!");
+  }
 }
 
 // Figures out which snake you are from the returned snakes
@@ -79,6 +98,53 @@ var findOurSnakeFromArray = function (snakeObj) {
     return snakeObj.id == id;
   };
 
+var howFarAwayFromHead = function(head,point){
+  distanceHolder = 0;
+
+  distanceHolder += Math.abs(head[0]-point[0]);
+  distanceHolder += Math.abs(head[1]-point[1]);
+
+  return distanceHolder;
+}
+
+var reorganizeFood = function(food,head){
+  var foodHolder = [];
+  var foodHolderIndex = 0;
+
+  for (var i = 0; i < food.length; i++){
+    foodHolder.push(food[i]);
+  }
+
+  var whichFood = [];
+  var foodScore = 100;
+
+  while (foodHolder.length > 0){
+    foodScore = 0;
+    foodHolderIndex = 0;
+    for (var i = 0; i<foodHolder.length;i++){
+      if (howFarAwayFromHead(head,food[i]) >= foodScore){
+        foodScore = howFarAwayFromHead(head,food[i]);
+        foodHolderIndex = i;
+      }
+    }
+    whichFood.unshift(foodHolder[foodHolderIndex]);
+    foodHolder.splice(foodHolderIndex,1);
+  }
+
+  return whichFood;
+}
+
+var disappearByTimeSnakeGetsThere = function(head,obstacles,length){
+  holder = [];
+  for(var i = 0;i<obstacles.length;i++){
+
+    if (howFarAwayFromHead(head,obstacles[i]) > length-i){
+      holder.push(obstacles[i]);
+    }
+  }
+
+  return holder;
+}
 
 /**
  * Attempts to fill in areas:
@@ -108,7 +174,7 @@ function changeDirections(directionChosen){
     return directionChosen;
 }
 
-function pointExists(direction){
+function pointExists(point,direction,obstacles){
 
 		var pointCheck = [];
     
@@ -133,7 +199,6 @@ function pointExists(direction){
     for (var i = 0; i < obstacles.length; i++){
       if (pointCheck[0] == obstacles[i][0]){
         if (pointCheck[1] == obstacles[i][1]){
-          //console.log(pointCheck + " " + obstacles[i]);
           return true;
         }
       }

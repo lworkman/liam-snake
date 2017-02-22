@@ -377,37 +377,262 @@ BinaryHeap.prototype = {
   }
 };
 
-function findShortestPathWithLevels(width,height,head,food,obstacles){
-    var graph = [];
+var findAreaAroundPoint = function(point,height,width){
+  var returnPoint = [];
 
-    for(var y = 0; y <= height + 1; y++){
+  pointHolder = [point[0],point[1]];
+
+  if (pointHolder[1]+1 < height){
+    returnPoint.push([pointHolder[0],pointHolder[1]+1]);
+  }
+  if (pointHolder[1]-1 > 0){
+     returnPoint.push([pointHolder[0],pointHolder[1]-1]);
+  }
+  if (pointHolder[0]+1 < width){
+    returnPoint.push([pointHolder[0]+1,pointHolder[1]]);
+  }
+  if (pointHolder[0]-1 > 0){
+  returnPoint.push([pointHolder[0]-1,pointHolder[1]]);
+  }
+  return returnPoint;
+}
+
+var findAreasAroundBody = function(body,height,width){
+  var returnPoint = [];
+
+  for (var i = 0; i<body.length;i++){
+    returnPoint = returnPoint.concat(findAreaAroundPoint(body[i],height,width));
+  }
+
+  return returnPoint;
+
+}
+
+var addArrayToGraph = function(graph,gridArray,priority){
+
+    var holderGraph = graph;
+
+    setPriority = priority;
+
+    for (var i = 0; i< gridArray.length; i++){
+
+<<<<<<< HEAD
+        holderGraph[gridArray[i][1]][gridArray[i][0]] = setPriority;
+=======
+        holderGraph[gridArray[i][0]][gridArray[i][1]] = setPriority;
+>>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
+    }
+
+    return holderGraph;
+}
+
+<<<<<<< HEAD
+var isItAWall = function(point,graph){
+    if (graph[point[1]][point[0]] == 0){
+      return true;
+    }
+    return false;
+}
+
+
+var checkIfPointWithDirectionBlocked = function(point,direction,graph){
+
+  var pointToCheck = [];
+
+  switch(direction){
+      case "up":
+        pointToCheck[0] = point[0];
+        pointToCheck[1] = point[1]-1;
+        break;
+      case "right":
+        pointToCheck[0] = point[0]+1;
+        pointToCheck[1] = point[1];
+        break;
+      case "down":
+        pointToCheck[0] = point[0];
+        pointToCheck[1] = point[1]+1;
+        break;
+      case "left":
+        pointToCheck[0] = point[0]-1;
+        pointToCheck[1] = point[1];
+        break;
+    }
+
+  if (pointToCheck[0] < 0 || pointToCheck[1] < 0 || pointToCheck[0] == graph[0].length || pointToCheck[1] == graph.length){
+    return true;
+  }
+
+  if (graph[pointToCheck[1]][pointToCheck[0]] == 0){
+    return true;
+  }
+  return false;
+}
+
+function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health){
+    var graph = [];
+    var nextPoint = [];
+    var pathLength = 1000;
+    var spotsThatMightBeInATunnel = [];
+
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 1, "ownBody": 0, "tunnel": 0};
+=======
+function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
+    var graph = [];
+    var nextPoint = [];
+    var pathLength = 1000;
+
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1.1, "nearOthers": 3, "nearWalls": 40, "ownBody": 0};
+>>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
+
+    for(var y = 0; y < height; y++){
         var row = [];
-        for (var x = 0; x <= width + 1; x++){
-            if (x == 0 || y == 0 || x == width+1 || y == height+1){
-                row.push(0);
+        for (var x = 0; x < width; x++){
+            if (x == 0 || x == width-1 || y == 0 || y == height-1){
+                row.push(priority.nearWalls)
             }
-            row.push(1);
+            else {
+                row.push(priority.empty);
+            }
         }
         graph.push(row);
     }
 
-    for (var i = 0; i< obstacles.length; i++){
-        graph[obstacles[i][0]+1][obstacles[i][1]+1] = 0;
+    var areaAroundOtherSnakes = findAreasAroundBody(badSnakes,height,width);
+    var areaAroundSelf = findAreasAroundBody(ownBody,height,width);
+    var areaAroundWalls = findAreasAroundWalls(graph,priority.nearWalls);
+
+    spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundSelf);
+    spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundOtherSnakes);
+    spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundWalls);
+
+    graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
+    graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
+    graph = addArrayToGraph(graph,ownBody,priority.ownBody);
+    graph = addArrayToGraph(graph,badSnakes,priority.full);
+
+<<<<<<< HEAD
+    if (health < 30 || isPointInTunnel(head,graph)){
+      priority.tunnel = 20;
     }
 
-    graph = new Graph(graph);
+    spotsThatMightBeInATunnel = checkIfPointsAreTunnels(spotsThatMightBeInATunnel,graph);
+    graph = addArrayToGraph(graph,spotsThatMightBeInATunnel,priority.tunnel);
 
-    var start = graph.grid[head[0]+1][head[1]+1];
-    var end = graph.grid[food[0]+1][food[1]+1];
+    graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
-    var result = astar.search(graph,start,end);
+    console.log(graph);
 
-    console.log(result[0]);
+    var graphObject = new Graph(graph);
 
-    var nextPoint = [result[0].x-1,result[0].y-1];
+    var start = graphObject.grid[head[1]][head[0]];
+
+    for (var i = 0; i<food.length;i++){
+
+      var end = graphObject.grid[food[i][1]][food[i][0]];
+      var result = astar.search(graphObject,start,end);
+
+      if (result.length < pathLength && result.length > 0){
+
+        nextPoint = [result[0].y,result[0].x];
+=======
+    graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
+
+    var graphObject = new Graph(graph);
+
+    var start = graphObject.grid[head[0]][head[1]];
+
+    for (var i = 0; i<food.length;i++){
+
+      var end = graphObject.grid[food[i][0]][food[i][1]];
+      var result = astar.search(graphObject,start,end);
+
+      if (result.length < pathLength && result.length > 0){
+
+        nextPoint = [result[0].x,result[0].y];
+>>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
+        pathLength = result.length;
+      }
+    }
+
+    if(nextPoint.length == 0){
+      console.log("Stalling!");
+      //Stall - Find shortest path to furthest point on own body.
+      var stallNext = [], stallPoint, stallPath;
+      for(var index in areaAroundSelf){
+        if(areaAroundSelf.hasOwnProperty(index)){
+
+          //When stalling we always want to be doubling back on ourselves. In this case we want to find the shortest path
+          //to the furthest reachable node that is beside our own snake.
+          stallPoint = areaAroundSelf[index];
+          stallPath = astar.search(graphObject,start,graphObject.grid[stallPoint[0]][stallPoint[1]]);
+          if(stallPath.length > 0){
+<<<<<<< HEAD
+            stallNext = [stallPath[0].y, stallPath[0].x];
+=======
+            stallNext = [stallPath[0].x, stallPath[0].y];
+>>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
+          }else if(stallNext.length > 0){
+            nextPoint = stallNext;
+            break;
+          }
+        }
+      }
+    }
 
     return nextPoint;
+
+<<<<<<< HEAD
 }
+
+var checkIfPointsAreTunnels = function(points,graph){
+  var pointHolder = [];
+
+  for (var i =0; i<points.length;i++){
+    if (isPointInTunnel(points[i],graph) && !isItAWall(points[i],graph)){
+      pointHolder.push(points[i]);
+    }
+  }
+  return pointHolder;
+}
+
+var isPointInTunnel = function(point,graph){
+
+    var directions = ["up","down","left","right"];
+    var horizontalCovered = 0;
+    var verticalCovered = 0;
+
+    for (var i = 0; i< directions.length; i++){
+      if (checkIfPointWithDirectionBlocked(point,directions[i],graph)){
+        if (i < 2){
+          verticalCovered ++;
+        }
+        else {
+          horizontalCovered ++;
+        }
+      }
+    }
+
+    if ((verticalCovered == 2 && horizontalCovered == 0) || (verticalCovered == 0 && horizontalCovered == 2)){
+      return true;
+    }
+    return false;
+=======
+>>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
+}
+
+var findAreasAroundWalls = function(graph,wallPriority){
+  var arrayOfSpots = [];
+
+    for (var y = 0; y< graph.length; y++){
+      for (var x = 0; x<graph[y].length; x++){
+        if (graph[y][x] == wallPriority){
+          arrayOfSpots.push([x,y]);
+        }
+      }
+  }
+  return arrayOfSpots;
+}
+
 
 // javascript-astar 0.4.1
 // http://github.com/bgrins/javascript-astar
@@ -418,8 +643,13 @@ function findShortestPathWithLevels(width,height,head,food,obstacles){
 
 var astarSnakes = {
 
-    astarSnake: function(width,height,head,food,obstacles){
-        return findShortestPathWithLevels(width,height,head,food,obstacles);
+<<<<<<< HEAD
+    astarSnake: function(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health){
+        return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health);
+=======
+    astarSnake: function(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
+        return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear);
+>>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
     }
 
 }
