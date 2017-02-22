@@ -30,12 +30,7 @@ var createBaseSnake = function(requestBody){
   thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords,body.coords.length));
   goalFood = reorganizeFood(requestBody.food,head);
 
-<<<<<<< HEAD
   var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points);
-
-=======
-  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,head,goalFood,badSnakes,body.coords,thingsThatWillDisappear);
->>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
 
   move = whichDirection(head,astar);
 

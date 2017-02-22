@@ -416,17 +416,12 @@ var addArrayToGraph = function(graph,gridArray,priority){
 
     for (var i = 0; i< gridArray.length; i++){
 
-<<<<<<< HEAD
         holderGraph[gridArray[i][1]][gridArray[i][0]] = setPriority;
-=======
-        holderGraph[gridArray[i][0]][gridArray[i][1]] = setPriority;
->>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
     }
 
     return holderGraph;
 }
 
-<<<<<<< HEAD
 var isItAWall = function(point,graph){
     if (graph[point[1]][point[0]] == 0){
       return true;
@@ -475,15 +470,6 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
     var spotsThatMightBeInATunnel = [];
 
     var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 1, "ownBody": 0, "tunnel": 0};
-=======
-function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
-    var graph = [];
-    var nextPoint = [];
-    var pathLength = 1000;
-
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1.1, "nearOthers": 3, "nearWalls": 40, "ownBody": 0};
->>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
-
     for(var y = 0; y < height; y++){
         var row = [];
         for (var x = 0; x < width; x++){
@@ -510,7 +496,6 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
 
-<<<<<<< HEAD
     if (health < 30 || isPointInTunnel(head,graph)){
       priority.tunnel = 20;
     }
@@ -534,22 +519,6 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
       if (result.length < pathLength && result.length > 0){
 
         nextPoint = [result[0].y,result[0].x];
-=======
-    graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
-
-    var graphObject = new Graph(graph);
-
-    var start = graphObject.grid[head[0]][head[1]];
-
-    for (var i = 0; i<food.length;i++){
-
-      var end = graphObject.grid[food[i][0]][food[i][1]];
-      var result = astar.search(graphObject,start,end);
-
-      if (result.length < pathLength && result.length > 0){
-
-        nextPoint = [result[0].x,result[0].y];
->>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
         pathLength = result.length;
       }
     }
@@ -566,11 +535,8 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
           stallPoint = areaAroundSelf[index];
           stallPath = astar.search(graphObject,start,graphObject.grid[stallPoint[0]][stallPoint[1]]);
           if(stallPath.length > 0){
-<<<<<<< HEAD
             stallNext = [stallPath[0].y, stallPath[0].x];
-=======
-            stallNext = [stallPath[0].x, stallPath[0].y];
->>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
+
           }else if(stallNext.length > 0){
             nextPoint = stallNext;
             break;
@@ -581,7 +547,6 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
 
     return nextPoint;
 
-<<<<<<< HEAD
 }
 
 var checkIfPointsAreTunnels = function(points,graph){
@@ -616,8 +581,7 @@ var isPointInTunnel = function(point,graph){
       return true;
     }
     return false;
-=======
->>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
+
 }
 
 var findAreasAroundWalls = function(graph,wallPriority){
@@ -643,13 +607,8 @@ var findAreasAroundWalls = function(graph,wallPriority){
 
 var astarSnakes = {
 
-<<<<<<< HEAD
     astarSnake: function(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health){
         return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health);
-=======
-    astarSnake: function(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear){
-        return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear);
->>>>>>> 8e3b0ddea18db8197710e48110b7cfadc314af2e
     }
 
 }
