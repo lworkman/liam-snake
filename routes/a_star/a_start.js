@@ -377,6 +377,15 @@ BinaryHeap.prototype = {
   }
 };
 
+/**
+ * Returns the points in the four cardinal directions around a single point if they exist.
+ * 
+ * @param The point to check
+ * @param The height of the board
+ * @param The width of the board
+ * @returns An point in an [X,Y] array
+ */
+
 var findAreaAroundPoint = function(point,height,width){
   var returnPoint = [];
 
@@ -397,78 +406,184 @@ var findAreaAroundPoint = function(point,height,width){
   return returnPoint;
 }
 
-var findAreasAroundBody = function(body,height,width){
+/**
+ * Takes in an array of points and returns an array of all surrounding points. May cause points to double.
+ * 
+ * @param The array of points
+ * @param The height of the board
+ * @param The width of the board
+ * 
+ * @returns An array of points
+ */
+
+var findAreasAroundCoorArray = function(coorArray,height,width){
   var returnPoint = [];
 
-  for (var i = 0; i<body.length;i++){
-    returnPoint = returnPoint.concat(findAreaAroundPoint(body[i],height,width));
+  for (var i = 0; i<coorArray.length;i++){
+    returnPoint = returnPoint.concat(findAreaAroundPoint(coorArray[i],height,width));
   }
 
   return returnPoint;
 
 }
 
-var addArrayToGraph = function(graph,gridArray,priority){
+/**
+ * Loops through an array of [X,Y] coordinates and converts the corresponding node
+ * on the graph to the provided priority.
+ * 
+ * @param The graph of nodes
+ * @param The array of coordinates
+ * @returns A graph array
+ */
 
-    var holderGraph = graph;
+var addArrayToGraph = function(graph,coorArray,priority){
 
-    setPriority = priority;
+    for (var i = 0; i< coorArray.length; i++){
 
-    for (var i = 0; i< gridArray.length; i++){
-
-        holderGraph[gridArray[i][1]][gridArray[i][0]] = setPriority;
+        graph[coorArray[i][1]][coorArray[i][0]] = priority;
     }
 
-    return holderGraph;
+    return graph;
 }
 
+/**
+ * Checks if a point is a wall by seeing if it falls out of bounds or if it's priority is equal to 0
+ * 
+ * @param Point to check
+ * @param The graph of nodes
+ * @returns bool
+ */
+
 var isItAWall = function(point,graph){
-  console.log(point);
     if (point[0] < 0 || point[1] < 0 || point[1] >= graph.length || point[0] >= graph[0].length || graph[point[1]][point[0]] == 0){
       return true;
     }
     return false;
 }
 
+/**
+ * Checks if an array of points are in tunnels by looping through the isPointInTunnel() function.
+ * 
+ * @param An array of points
+ * @param The graph of nodes
+ * 
+ * @returns Array of points in tunnels
+ */
 
-var checkIfPointWithDirectionBlocked = function(point,direction,graph){
+var checkIfPointsAreTunnels = function(points,graph){
 
-  var pointToCheck = [];
+  var pointHolder = [];
 
-  switch(direction){
-      case "up":
-        pointToCheck[0] = point[0];
-        pointToCheck[1] = point[1]-1;
-        break;
-      case "right":
-        pointToCheck[0] = point[0]+1;
-        pointToCheck[1] = point[1];
-        break;
-      case "down":
-        pointToCheck[0] = point[0];
-        pointToCheck[1] = point[1]+1;
-        break;
-      case "left":
-        pointToCheck[0] = point[0]-1;
-        pointToCheck[1] = point[1];
-        break;
+  for (var i =0; i<points.length;i++){
+    if (isPointInTunnel(points[i],graph)){
+      pointHolder.push(points[i]);
     }
-
-  if (pointToCheck[0] < 0 || pointToCheck[1] < 0 || pointToCheck[0] == graph[0].length || pointToCheck[1] == graph.length){
-    return true;
   }
-
-  if (graph[pointToCheck[1]][pointToCheck[0]] == 0){
-    return true;
-  }
-  return false;
+  return pointHolder;
 }
 
-function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health){
+/**
+ * Checks if a point is in a tunnel by looking at the surrounding blocks. A point is in a tunnel if 
+ * it is covered on two opposite sides exactly and is empty.
+ * 
+ * @param The point to check
+ * @param The graph of nodes
+ * @returns bool
+ */
+
+var isPointInTunnel = function(point,graph){
+
+    if (isItAWall(point,graph)){
+      return false;
+    }
+
+    var directions = [[point[0],point[1]-1],[point[0],point[1]+1],[point[0]+1,point[1]],[point[0]-1,point[1]]];
+    var horizontalCovered = 0;
+    var verticalCovered = 0;
+
+    for (var i = 0; i< directions.length; i++){
+      if (isItAWall(directions[i],graph)){
+        if (i < 2){
+          verticalCovered ++;
+        }
+        else {
+          horizontalCovered ++;
+        }
+      }
+    }
+
+    if ((verticalCovered == 2 && horizontalCovered == 0) || (verticalCovered == 0 && horizontalCovered == 2)){
+      return true;
+    }
+    return false;
+
+}
+
+/**
+ * Finds all the areas around walls by comparing their priority to the priority of the wall.
+ * 
+ * @param The graph full of nodes
+ * 
+ * @param The wall priority to check against
+ * @returns array
+ */
+
+var findAreasAroundWalls = function(graph,wallPriority){
+  var arrayOfSpots = [];
+
+    for (var y = 0; y< graph.length; y++){
+      for (var x = 0; x<graph[y].length; x++){
+        if (graph[y][x] == wallPriority){
+          arrayOfSpots.push([x,y]);
+        }
+      }
+  }
+  return arrayOfSpots;
+}
+
+/**
+ * Finds out how many points are full around a single point
+ * 
+ * @param The point to check
+ * @param The graph full of nodes
+ * 
+ * @returns int
+ */
+
+var isPointInDanger = function(point,graph){
+
+  var pointsToCheck = [[point[0]+1,point[1]],[point[0]-1,point[1]],[point[0],point[1]+1],[point[0],point[1]-1],[point[0]+1,point[1]+1],[point[0]-1,point[1]+1],[point[0]-1,point[1]-1],[point[0]+1,point[1]+1]];
+  var dangerLevel = 0;
+
+  for(var i = 0; i<pointsToCheck.length;i++){
+    if (isItAWall(pointsToCheck[i],graph)){
+      dangerLevel ++;
+    }
+  }
+
+  return dangerLevel;
+}
+
+/**
+ * The basic function that calls A* multiple times to try and figure out the best path.
+ * 
+ * @param The width of the board [int]
+ * @param The height of the board [int]
+ * @param The goals on the board, with most important on the bottom [array]
+ * @param The other snakes on the board [array of arrays]
+ * @param Our snake's body [array]
+ * @param An array of points that will disappear by the time our snake reaches them
+ * @param The current health of our snake [int]
+ * 
+ * @returns The point for the next move
+ */
+
+function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsThatWillDisappear,health){
     var graph = [];
     var nextPoint = [];
     var pathLength = 1000;
     var spotsThatMightBeInATunnel = [];
+    var head = [ownBody[0][0],ownBody[0][1]];
     ownBody.splice(0,1);
 
     var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 10, "ownBody": 0, "tunnel": 20};
@@ -485,8 +600,8 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
         graph.push(row);
     }
 
-    var areaAroundOtherSnakes = findAreasAroundBody(badSnakes,height,width);
-    var areaAroundSelf = findAreasAroundBody(ownBody,height,width);
+    var areaAroundOtherSnakes = findAreasAroundCoorArray(badSnakes,height,width);
+    var areaAroundSelf = findAreasAroundCoorArray(ownBody,height,width);
     var areaAroundWalls = findAreasAroundWalls(graph,priority.nearWalls);
 
     spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundSelf);
@@ -507,15 +622,13 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
 
     graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
-    console.log(isPointInDanger(head,graph));
-
     var graphObject = new Graph(graph);
 
     var start = graphObject.grid[head[1]][head[0]];
 
-    for (var i = 0; i<food.length;i++){
+    for (var i = 0; i<goals.length;i++){
 
-      var end = graphObject.grid[food[i][1]][food[i][0]];
+      var end = graphObject.grid[goals[i][1]][goals[i][0]];
       var result = astar.search(graphObject,start,end);
 
       if (result.length < pathLength && result.length > 0){
@@ -531,9 +644,9 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
 
     var start = graphObject.grid[head[1]][head[0]];
 
-    for (var i = 0; i<food.length;i++){
+    for (var i = 0; i<goals.length;i++){
 
-      var end = graphObject.grid[food[i][1]][food[i][0]];
+      var end = graphObject.grid[goals[i][1]][goals[i][0]];
       var result = astar.search(graphObject,start,end);
 
       if (result.length < pathLength && result.length > 0){
@@ -572,71 +685,6 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
 
 }
 
-var checkIfPointsAreTunnels = function(points,graph){
-  var pointHolder = [];
-
-  for (var i =0; i<points.length;i++){
-    if (isPointInTunnel(points[i],graph) && !isItAWall(points[i],graph)){
-      pointHolder.push(points[i]);
-    }
-  }
-  return pointHolder;
-}
-
-var isPointInTunnel = function(point,graph){
-
-    var directions = ["up","down","left","right"];
-    var horizontalCovered = 0;
-    var verticalCovered = 0;
-
-    for (var i = 0; i< directions.length; i++){
-      if (checkIfPointWithDirectionBlocked(point,directions[i],graph)){
-        if (i < 2){
-          verticalCovered ++;
-        }
-        else {
-          horizontalCovered ++;
-        }
-      }
-    }
-
-    if ((verticalCovered == 2 && horizontalCovered == 0) || (verticalCovered == 0 && horizontalCovered == 2)){
-      return true;
-    }
-    return false;
-
-}
-
-var findAreasAroundWalls = function(graph,wallPriority){
-  var arrayOfSpots = [];
-
-    for (var y = 0; y< graph.length; y++){
-      for (var x = 0; x<graph[y].length; x++){
-        if (graph[y][x] == wallPriority){
-          arrayOfSpots.push([x,y]);
-        }
-      }
-  }
-  return arrayOfSpots;
-}
-
-//Finds out how many squares around a point are full (max 8)
-
-var isPointInDanger = function(point,graph){
-
-  var pointsToCheck = [[point[0]+1,point[1]],[point[0]-1,point[1]],[point[0],point[1]+1],[point[0],point[1]-1],[point[0]+1,point[1]+1],[point[0]-1,point[1]+1],[point[0]-1,point[1]-1],[point[0]+1,point[1]+1]];
-  var dangerLevel = 0;
-
-  for(var i = 0; i<pointsToCheck.length;i++){
-    console.log(pointsToCheck[i]);
-    if (isItAWall(pointsToCheck[i],graph)){
-      dangerLevel ++;
-    }
-  }
-
-  return dangerLevel;
-}
-
 // javascript-astar 0.4.1
 // http://github.com/bgrins/javascript-astar
 // Freely distributable under the MIT License.
@@ -646,8 +694,8 @@ var isPointInDanger = function(point,graph){
 
 var astarSnakes = {
 
-    astarSnake: function(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health){
-        return findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thingsThatWillDisappear,health);
+    astarSnake: function(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health){
+        return findShortestPathWithLevels(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health);
     }
 
 }
