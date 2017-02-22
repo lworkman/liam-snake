@@ -34,6 +34,7 @@ router.post('/random/start', function (req, res) {
 
 // Handle POST request to '/move'
 router.post('/move', function (req, res) {
+
   // NOTE: Do something here to generate your move
 
   //extraFunctions.ourSnakeID = req.body.you;

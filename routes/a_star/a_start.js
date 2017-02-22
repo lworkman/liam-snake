@@ -402,7 +402,7 @@ var findAreaAroundPoint = function(point,height,width){
   }
   if (pointHolder[0]-1 > 0){
   returnPoint.push([pointHolder[0]-1,pointHolder[1]]);
-  }
+}
   return returnPoint;
 }
 
@@ -417,6 +417,7 @@ var findAreaAroundPoint = function(point,height,width){
  */
 
 var findAreasAroundCoorArray = function(coorArray,height,width){
+
   var returnPoint = [];
 
   for (var i = 0; i<coorArray.length;i++){
@@ -440,7 +441,7 @@ var addArrayToGraph = function(graph,coorArray,priority){
 
     for (var i = 0; i< coorArray.length; i++){
 
-        graph[coorArray[i][1]][coorArray[i][0]] = priority;
+        graph[coorArray[i][0]][coorArray[i][1]] = priority;
     }
 
     return graph;
@@ -455,7 +456,7 @@ var addArrayToGraph = function(graph,coorArray,priority){
  */
 
 var isItAWall = function(point,graph){
-    if (point[0] < 0 || point[1] < 0 || point[1] >= graph.length || point[0] >= graph[0].length || graph[point[1]][point[0]] == 0){
+    if (point[0] < 0 || point[1] < 0 || point[1] >= graph[0].length || point[0] >= graph.length || graph[point[0]][point[1]] == 0){
       return true;
     }
     return false;
@@ -531,9 +532,9 @@ var isPointInTunnel = function(point,graph){
 var findAreasAroundWalls = function(graph,wallPriority){
   var arrayOfSpots = [];
 
-    for (var y = 0; y< graph.length; y++){
-      for (var x = 0; x<graph[y].length; x++){
-        if (graph[y][x] == wallPriority){
+    for (var x = 0; x< graph.length; x++){
+      for (var y = 0; y<graph[x].length; y++){
+        if (graph[x][y] == wallPriority){
           arrayOfSpots.push([x,y]);
         }
       }
@@ -565,6 +566,31 @@ var isPointInDanger = function(point,graph){
 }
 
 /**
+ * Displays the node graph, oriented properly, in the console.
+ * 
+ * @param The graph of nodes
+ * @returns null
+ */
+
+var displayGraph = function(graph){
+  var graphHolder = [];
+  var graphOutput = [];
+
+  for (var i = 0; i< graph.length; i++){
+    graphHolder.push([0]);
+    graphOutput.push([0]);
+  }
+
+  for (var y = 0; y < graph.length; y++){
+     for (var x = 0; x < graph[y].length; x++){
+      graphHolder[y][x] = graph[x][y];
+     }
+  }
+
+  console.log(graphHolder);
+}
+
+/**
  * The basic function that calls A* multiple times to try and figure out the best path.
  * 
  * @param The width of the board [int]
@@ -584,12 +610,11 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var pathLength = 1000;
     var spotsThatMightBeInATunnel = [];
     var head = [ownBody[0][0],ownBody[0][1]];
-    ownBody.splice(0,1);
 
     var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 10, "ownBody": 0, "tunnel": 20};
-    for(var y = 0; y < height; y++){
+    for(var x = 0; x < width; x++){
         var row = [];
-        for (var x = 0; x < width; x++){
+        for (var y = 0; y < height; y++){
             if (x == 0 || x == width-1 || y == 0 || y == height-1){
                 row.push(priority.nearWalls)
             }
@@ -622,36 +647,20 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
     graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
+    displayGraph(graph);
+
     var graphObject = new Graph(graph);
 
-    var start = graphObject.grid[head[1]][head[0]];
+    var start = graphObject.grid[head[0]][head[1]];
 
     for (var i = 0; i<goals.length;i++){
 
-      var end = graphObject.grid[goals[i][1]][goals[i][0]];
+      var end = graphObject.grid[goals[i][0]][goals[i][1]];
       var result = astar.search(graphObject,start,end);
 
       if (result.length < pathLength && result.length > 0){
 
-        nextPoint = [result[0].y,result[0].x];
-        pathLength = result.length;
-      }
-    }
-
-    graph = addArrayToGraph(graph,spotsThatMightBeInATunnel,priority.empty);
-
-    var graphObject = new Graph(graph);
-
-    var start = graphObject.grid[head[1]][head[0]];
-
-    for (var i = 0; i<goals.length;i++){
-
-      var end = graphObject.grid[goals[i][1]][goals[i][0]];
-      var result = astar.search(graphObject,start,end);
-
-      if (result.length < pathLength && result.length > 0){
-
-        nextPoint = [result[0].y,result[0].x];
+        nextPoint = [result[0].x,result[0].y];
         pathLength = result.length;
       }
     }
@@ -680,6 +689,8 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         }
       }
     }
+
+    console.log(nextPoint);
 
     return nextPoint;
 
