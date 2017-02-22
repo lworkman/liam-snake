@@ -379,7 +379,7 @@ BinaryHeap.prototype = {
 
 /**
  * Returns the points in the four cardinal directions around a single point if they exist.
- * 
+ *
  * @param The point to check
  * @param The height of the board
  * @param The width of the board
@@ -408,11 +408,11 @@ var findAreaAroundPoint = function(point,height,width){
 
 /**
  * Takes in an array of points and returns an array of all surrounding points. May cause points to double.
- * 
+ *
  * @param The array of points
  * @param The height of the board
  * @param The width of the board
- * 
+ *
  * @returns An array of points
  */
 
@@ -431,7 +431,7 @@ var findAreasAroundCoorArray = function(coorArray,height,width){
 /**
  * Loops through an array of [X,Y] coordinates and converts the corresponding node
  * on the graph to the provided priority.
- * 
+ *
  * @param The graph of nodes
  * @param The array of coordinates
  * @returns A graph array
@@ -449,7 +449,7 @@ var addArrayToGraph = function(graph,coorArray,priority){
 
 /**
  * Checks if a point is a wall by seeing if it falls out of bounds or if it's priority is equal to 0
- * 
+ *
  * @param Point to check
  * @param The graph of nodes
  * @returns bool
@@ -463,11 +463,35 @@ var isItAWall = function(point,graph){
 }
 
 /**
+ * Return the movement vector between two body parts.
+ *
+ * @param bodyPart1
+ * @param bodyPart2
+ * @returns {[*,*]}
+ */
+var getMoveVector = function(bodyPart1,bodyPart2){
+  return [bodyPart1[0] - bodyPart2[0], bodyPart1[1] - bodyPart2[1]];
+};
+
+/**
+ * Return the distance between two points.
+ *
+ * @param point1
+ * @param point2
+ * @returns {number}
+ */
+
+var getDistance = function(point1,point2){
+  return Math.abs(point1[0] - point2[0]) + Math.abs(point1[1] - point2[1]);
+};
+
+
+/**
  * Checks if an array of points are in tunnels by looping through the isPointInTunnel() function.
- * 
+ *
  * @param An array of points
  * @param The graph of nodes
- * 
+ *
  * @returns Array of points in tunnels
  */
 
@@ -484,9 +508,9 @@ var checkIfPointsAreTunnels = function(points,graph){
 }
 
 /**
- * Checks if a point is in a tunnel by looking at the surrounding blocks. A point is in a tunnel if 
+ * Checks if a point is in a tunnel by looking at the surrounding blocks. A point is in a tunnel if
  * it is covered on two opposite sides exactly and is empty.
- * 
+ *
  * @param The point to check
  * @param The graph of nodes
  * @returns bool
@@ -522,9 +546,9 @@ var isPointInTunnel = function(point,graph){
 
 /**
  * Finds all the areas around walls by comparing their priority to the priority of the wall.
- * 
+ *
  * @param The graph full of nodes
- * 
+ *
  * @param The wall priority to check against
  * @returns array
  */
@@ -544,10 +568,10 @@ var findAreasAroundWalls = function(graph,wallPriority){
 
 /**
  * Finds out how many points are full around a single point
- * 
+ *
  * @param The point to check
  * @param The graph full of nodes
- * 
+ *
  * @returns int
  */
 
@@ -564,6 +588,14 @@ var isPointInDanger = function(point,graph){
 
   return dangerLevel;
 }
+
+var getWeightByCoordinates = function(graphObject,x,y,width,height){
+  if(x < 0 || y < 0 || x > width - 1 || y > height - 1){
+    return 0;
+  }else{
+    return parseInt(graphObject.grid[x][y].weight);
+  }
+};
 
 /**
  * Displays the node graph, oriented properly, in the console.
@@ -592,7 +624,7 @@ var displayGraph = function(graph){
 
 /**
  * The basic function that calls A* multiple times to try and figure out the best path.
- * 
+ *
  * @param The width of the board [int]
  * @param The height of the board [int]
  * @param The goals on the board, with most important on the bottom [array]
@@ -600,7 +632,7 @@ var displayGraph = function(graph){
  * @param Our snake's body [array]
  * @param An array of points that will disappear by the time our snake reaches them
  * @param The current health of our snake [int]
- * 
+ *
  * @returns The point for the next move
  */
 
@@ -625,6 +657,8 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         }
         graph.push(row);
     }
+
+    var ownTail = ownBody[ownBody.length - 1];
 
     var areaAroundOtherSnakes = findAreasAroundCoorArray(badSnakes,height,width);
     var areaAroundSelf = findAreasAroundCoorArray(ownBody,height,width);
@@ -669,28 +703,56 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     if(nextPoint.length == 0){
       console.log("Stalling!");
 
-      graphObject = new Graph(graph);   
+      //Get vector total of last 2 moves.
+      var lastMoveVector = getMoveVector(head,ownBody[1]),
+          secondLastMoveVector = getMoveVector(ownBody[1],ownBody[2]),
+          vectorTotal = [lastMoveVector[0] + secondLastMoveVector[0], lastMoveVector[1] + secondLastMoveVector[1]],
+          sameDirectionMove = [head[0] + lastMoveVector[0],head[1] + lastMoveVector[1]];
 
-      //Stall - Find shortest path to furthest point on own body.
-      var stallNext = [], stallPoint, stallPath;
-      for(var index in areaAroundSelf){
-        if(areaAroundSelf.hasOwnProperty(index)){
+      // CASE 1: If last two moves were an elbow
+      if(vectorTotal[0] != 0 && vectorTotal[1] != 0){
+        var doubleBackVector = [secondLastMoveVector[0] * -1, secondLastMoveVector[1] * -1],
+            doubleBackMove = [head[0] + doubleBackVector[0], head[1] + doubleBackVector[1]];
 
-          //When stalling we always want to be doubling back on ourselves. In this case we want to find the shortest path
-          //to the furthest reachable node that is beside our own snake.
-          stallPoint = areaAroundSelf[index];
-          stallPath = astar.search(graphObject,start,graphObject.grid[stallPoint[1]][stallPoint[0]]);
-          if(stallPath.length > 0){
-            stallNext = [stallPath[0].y, stallPath[0].x];
-
-          }else if(stallNext.length > 0){
-            nextPoint = stallNext;
-            break;
-          }
+        //CASE 1.1: Can we double back?
+        if(getWeightByCoordinates(graphObject,doubleBackMove[0],doubleBackMove[1],width,height) > 0){
+          nextPoint = doubleBackMove;
+        }
+        //CASE 1.2: If not, try to move in same direction
+        else if(getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height) > 0){
+          nextPoint = sameDirectionMove;
+        }
+        //CASE 1.3: If we can't move in the same direction, go in the only possible direction.
+        else {
+          nextPoint = [(lastMoveVector[0] + (lastMoveVector[0] * -1) + doubleBackVector[0]) * -1,(lastMoveVector[1] + (lastMoveVector[1] * -1) + doubleBackVector[1]) *-1];
         }
       }
-    }
+      //CASE 2: Last two moves were the same.
+      else{
+        var wasVertical = lastMoveVector[0] == 0,
+            backupVectors = wasVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]];
+        //CASE 2.1: Can we go straight?
+        if(getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height) > 0){
+          nextPoint = sameDirectionMove;
+        }else{
+          //CASE 2.2: Backup moves.
+          var backupMove1 = [head[0] + backupVectors[0][0],head[1] + backupVectors[0][1]],
+              backupMove2 = [head[0] + backupVectors[1][0],head[1] + backupVectors[1][1]],
+              backupDistance1 = getDistance(ownTail,backupMove1),
+              backupDistance2 = getDistance(ownTail,backupMove2),
+              firstToCheck = backupDistance1 > backupDistance2 ? backupMove2 : backupMove1,
+              secondToCheck = backupDistance1 > backupDistance2 ? backupMove1 : backupMove2;
 
+          if(getWeightByCoordinates(graphObject,firstToCheck[0],firstToCheck[1],width,height) > 0){
+            nextPoint = firstToCheck;
+          } else {
+            nextPoint = secondToCheck;
+          }
+
+        }
+
+      }
+    }
     console.log(nextPoint);
 
     return nextPoint;
