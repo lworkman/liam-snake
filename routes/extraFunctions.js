@@ -18,17 +18,19 @@ var createBaseSnake = function(requestBody){
   var badSnakes = [];
   var thingsThatWillDisappear = [];
   var goalFood = [];
+  var snakeHeads = [];
 
   requestBody.snakes.splice(indexOfBody,1);
 
   for (var i = 0; i< requestBody.snakes.length; i++){
      badSnakes = badSnakes.concat(requestBody.snakes[i].coords);
+     snakeHeads = snakeHeads.concat(requestBody.snakes[i].coords[0]);
   }
 
   thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords));
   goalFood = reorganizeFood(requestBody.food,head);
 
-  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points);
+  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points,snakeHeads);
 
   move = whichDirection(head,astar);
 

@@ -604,14 +604,15 @@ var displayGraph = function(graph){
  * @returns The point for the next move
  */
 
-function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsThatWillDisappear,health){
+function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsThatWillDisappear,health,snakeHeads){
     var graph = [];
     var nextPoint = [];
     var pathLength = 1000;
     var spotsThatMightBeInATunnel = [];
     var head = [ownBody[0][0],ownBody[0][1]];
+    ownBody.slice(0,1);
 
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 10, "ownBody": 0, "tunnel": 20};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 10, "nearOthers": 3, "nearWalls": 1, "ownBody": 0, "tunnel": 1};
     for(var x = 0; x < width; x++){
         var row = [];
         for (var y = 0; y < height; y++){
@@ -628,6 +629,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var areaAroundOtherSnakes = findAreasAroundCoorArray(badSnakes,height,width);
     var areaAroundSelf = findAreasAroundCoorArray(ownBody,height,width);
     var areaAroundWalls = findAreasAroundWalls(graph,priority.nearWalls);
+    var areaAroundSnakeHeads = findAreasAroundCoorArray(snakeHeads,height,width);
 
     spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundSelf);
     spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundOtherSnakes);
@@ -637,6 +639,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
+    graph = addArrayToGraph(graph,areaAroundSnakeHeads,priority.full);
 
     if (health < 30 + ownBody.length || isPointInTunnel(head,graph)){
       priority.tunnel = 20;
@@ -646,8 +649,6 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     graph = addArrayToGraph(graph,spotsThatMightBeInATunnel,priority.tunnel);
 
     graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
-
-    displayGraph(graph);
 
     var graphObject = new Graph(graph);
 
@@ -705,8 +706,8 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
 var astarSnakes = {
 
-    astarSnake: function(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health){
-        return findShortestPathWithLevels(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health);
+    astarSnake: function(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health,snakeHeads){
+        return findShortestPathWithLevels(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health,snakeHeads);
     }
 
 }
