@@ -423,7 +423,7 @@ var addArrayToGraph = function(graph,gridArray,priority){
 }
 
 var isItAWall = function(point,graph){
-    if (graph[point[1]][point[0]] == 0){
+    if (graph[point[1]][point[0]] == 0 || point[0] < 0 || point[1] < 0 || point[1] <graph.length || point[0] < graph[0].length){
       return true;
     }
     return false;
@@ -496,7 +496,7 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
 
-    if (health < 30 || isPointInTunnel(head,graph)){
+    if (health < 30 + ownBody.length || isPointInTunnel(head,graph)){
       priority.tunnel = 20;
     }
 
@@ -505,7 +505,25 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
 
     graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
-    console.log(graph);
+    console.log(isPointInDanger(head,graph));
+
+    var graphObject = new Graph(graph);
+
+    var start = graphObject.grid[head[1]][head[0]];
+
+    for (var i = 0; i<food.length;i++){
+
+      var end = graphObject.grid[food[i][1]][food[i][0]];
+      var result = astar.search(graphObject,start,end);
+
+      if (result.length < pathLength && result.length > 0){
+
+        nextPoint = [result[0].y,result[0].x];
+        pathLength = result.length;
+      }
+    }
+
+    graph = addArrayToGraph(graph,spotsThatMightBeInATunnel,priority.empty);
 
     var graphObject = new Graph(graph);
 
@@ -525,6 +543,9 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
 
     if(nextPoint.length == 0){
       console.log("Stalling!");
+
+      graphObject = new Graph(graph);   
+
       //Stall - Find shortest path to furthest point on own body.
       var stallNext = [], stallPoint, stallPath;
       for(var index in areaAroundSelf){
@@ -533,7 +554,7 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
           //When stalling we always want to be doubling back on ourselves. In this case we want to find the shortest path
           //to the furthest reachable node that is beside our own snake.
           stallPoint = areaAroundSelf[index];
-          stallPath = astar.search(graphObject,start,graphObject.grid[stallPoint[0]][stallPoint[1]]);
+          stallPath = astar.search(graphObject,start,graphObject.grid[stallPoint[1]][stallPoint[0]]);
           if(stallPath.length > 0){
             stallNext = [stallPath[0].y, stallPath[0].x];
 
@@ -597,6 +618,21 @@ var findAreasAroundWalls = function(graph,wallPriority){
   return arrayOfSpots;
 }
 
+//Finds out how many squares around a point are full (max 8)
+
+var isPointInDanger = function(point,graph){
+
+  var pointsToCheck = [[point[0]+1,point[1]],[point[0]-1,point[1]],[point[0],point[1]+1],[point[0],point[1]-1],[point[0]+1,point[1]+1],[point[0]-1,point[1]+1],[point[0]-1,point[1]-1],[point[0]+1,point[1]+1]];
+  var dangerLevel = 0;
+
+  for(var i = 0; i<pointsToCheck.length;i++){
+    if (isItAWall(pointsToCheck[i],graph)){
+      dangerLevel ++;
+    }
+  }
+
+  return dangerLevel;
+}
 
 // javascript-astar 0.4.1
 // http://github.com/bgrins/javascript-astar
