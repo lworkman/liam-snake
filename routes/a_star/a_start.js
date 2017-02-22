@@ -423,7 +423,8 @@ var addArrayToGraph = function(graph,gridArray,priority){
 }
 
 var isItAWall = function(point,graph){
-    if (graph[point[1]][point[0]] == 0 || point[0] < 0 || point[1] < 0 || point[1] <graph.length || point[0] < graph[0].length){
+  console.log(point);
+    if (point[0] < 0 || point[1] < 0 || point[1] >= graph.length || point[0] >= graph[0].length || graph[point[1]][point[0]] == 0){
       return true;
     }
     return false;
@@ -468,8 +469,9 @@ function findShortestPathWithLevels(width,height,head,food,badSnakes,ownBody,thi
     var nextPoint = [];
     var pathLength = 1000;
     var spotsThatMightBeInATunnel = [];
+    ownBody.splice(0,1);
 
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 1, "ownBody": 0, "tunnel": 0};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 10, "ownBody": 0, "tunnel": 20};
     for(var y = 0; y < height; y++){
         var row = [];
         for (var x = 0; x < width; x++){
@@ -626,6 +628,7 @@ var isPointInDanger = function(point,graph){
   var dangerLevel = 0;
 
   for(var i = 0; i<pointsToCheck.length;i++){
+    console.log(pointsToCheck[i]);
     if (isItAWall(pointsToCheck[i],graph)){
       dangerLevel ++;
     }
