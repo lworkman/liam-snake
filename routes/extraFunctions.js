@@ -184,15 +184,21 @@ var differentSnakes = {
   /**
    * Moves up and right in a zig-zag, no matter what
    *
-   * @param ourSnakeCoordinates
+   * @param body
    * @returns your move
    */
-  dumbSnake: function (ourSnakeCoordinates) {
-    if (ourSnakeCoordinates[0][0] < ourSnakeCoordinates[0][1]) {
-      return 'right';
+  dumbSnake: function (requestBody) {
+
+    id = requestBody.you;
+
+
+    var body = requestBody.snakes.find(findOurSnakeFromArray);
+
+    if (body.coords[0][1] == body.coords[1][1]) {
+      return 'up';
     }
     else {
-      return 'up';
+      return 'right';
     }
   },
 
