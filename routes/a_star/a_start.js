@@ -813,19 +813,33 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       var lastMoveVector = getMoveVector(head,ownBody[0]),
           secondLastMoveVector = getMoveVector(ownBody[0],ownBody[1]),
           vectorTotal = [lastMoveVector[0] + secondLastMoveVector[0], lastMoveVector[1] + secondLastMoveVector[1]],
-          sameDirectionMove = [head[0] + lastMoveVector[0],head[1] + lastMoveVector[1]];
+          sameDirectionMove = [head[0] + lastMoveVector[0],head[1] + lastMoveVector[1]],
+          sameDirectionWeight = getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height);
 
       // CASE 1: If last two moves were an elbow
       if(vectorTotal[0] != 0 && vectorTotal[1] != 0){
         var doubleBackVector = [secondLastMoveVector[0] * -1, secondLastMoveVector[1] * -1],
-            doubleBackMove = [head[0] + doubleBackVector[0], head[1] + doubleBackVector[1]];
+            doubleBackMove = [head[0] + doubleBackVector[0], head[1] + doubleBackVector[1]],
+            doubleBackWeight = getWeightByCoordinates(graphObject,doubleBackMove[0],doubleBackMove[1],width,height);
 
         //CASE 1.1: Can we double back?
-        if(getWeightByCoordinates(graphObject,doubleBackMove[0],doubleBackMove[1],width,height) > 0){
-          nextPoint = doubleBackMove;
+        if(doubleBackWeight > 0){
+          //If our head is against a obstacle, do an area check instead.
+          if(sameDirectionWeight == 0){
+            var escapeDoubleBack = [head[0] + secondLastMoveVector[0], head[1] + secondLastMoveVector[1]],
+                doubleBackArea = findHowManyFreeNodesV2(doubleBackMove,graph),
+                escapeArea = findHowManyFreeNodesV2(escapeDoubleBack,graph);
+
+            console.log(escapeDoubleBack,escapeArea);
+            console.log(doubleBackMove,doubleBackArea);
+            nextPoint = escapeArea > doubleBackArea ? escapeDoubleBack : doubleBackMove;
+
+          }else{
+            nextPoint = doubleBackMove;
+          }
         }
         //CASE 1.2: If not, try to move in same direction
-        else if(getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height) > 0){
+        else if(sameDirectionWeight > 0){
           nextPoint = sameDirectionMove;
         }
         //CASE 1.3: If we can't move in the same direction, go in the only possible direction.
@@ -838,17 +852,19 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         var wasVertical = lastMoveVector[0] == 0,
             backupVectors = wasVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]];
         //CASE 2.1: Can we go straight?
-        if(getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height) > 0){
+        if(sameDirectionWeight > 0){
           nextPoint = sameDirectionMove;
         }else{
           //CASE 2.2: Backup moves.
           var backupMove1 = [head[0] + backupVectors[0][0],head[1] + backupVectors[0][1]],
               backupMove2 = [head[0] + backupVectors[1][0],head[1] + backupVectors[1][1]],
-              backupDistance1 = getDistance(ownTail,backupMove1),
-              backupDistance2 = getDistance(ownTail,backupMove2),
-              firstToCheck = backupDistance1 > backupDistance2 ? backupMove2 : backupMove1,
-              secondToCheck = backupDistance1 > backupDistance2 ? backupMove1 : backupMove2;
+              backupArea1 = findHowManyFreeNodesV2(backupMove1,graph),
+              backupArea2 = findHowManyFreeNodesV2(backupMove2,graph),
+              firstToCheck = backupArea1 > backupArea2 ? backupMove1 : backupMove2,
+              secondToCheck = backupArea1 > backupArea2 ? backupMove2 : backupMove1;
 
+          console.log(backupArea1,backupMove1);
+          console.log(backupArea2,backupMove2);
           if(getWeightByCoordinates(graphObject,firstToCheck[0],firstToCheck[1],width,height) > 0){
             nextPoint = firstToCheck;
           } else {
