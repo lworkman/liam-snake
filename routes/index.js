@@ -58,7 +58,7 @@ router.post('/random/move', function (req, res) {
   //var ourSnake = req.body.snakes.find(extraFunctions.findOurSnakeFromArray);
   // Response data
   var data = {
-    move: differentSnakes.dumbSnake(req.body), // one of: ['up','down','left','right']
+    move: differentSnakes.staticSnake(req.body), // one of: ['up','down','left','right']
     taunt: 'Get Rekt Jameson', // optional, but encouraged!
   }
 

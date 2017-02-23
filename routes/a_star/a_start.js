@@ -789,8 +789,6 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     // console.log([head[0]-1,head[1]]);
     // console.log(isPointInDanger([head[0]-1,head[1]],graph,true));
 
-    console.log(findHowManyFreeNodesV2(head,graph));
-
     var graphObject = new Graph(graph);
 
     var start = graphObject.grid[head[0]][head[1]];
@@ -866,6 +864,17 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
 }
 
+var aStarPathing = function(graph,goal,start){
+
+
+  var graphObject = new Graph(graph);
+  var graphStart = graphObject.grid[start[0]][start[1]];
+  var graphEnd = graphObject.grid[goal[0]][goal[1]];
+
+  var result = astar.search(graphObject,graphStart,graphEnd);
+  return [result[0].x,result[0].y];
+}
+
 // javascript-astar 0.4.1
 // http://github.com/bgrins/javascript-astar
 // Freely distributable under the MIT License.
@@ -877,6 +886,10 @@ var astarSnakes = {
 
     astarSnake: function(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health,snakeHeads){
         return findShortestPathWithLevels(width,height,food,badSnakes,ownBody,thingsThatWillDisappear,health,snakeHeads);
+    },
+
+    aStar: function(graph,goal,start){
+      return aStarPathing(graph,goal,start);
     }
 
 }

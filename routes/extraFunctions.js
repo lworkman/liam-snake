@@ -1,6 +1,7 @@
 // Variables needed to create the base snake used by all snakes
 
 var aStarSnakes = require("./a_star/a_start.js");
+var staticSnakes = require("./static/static.js");
 
 var baseSnake = { };
 var id = "";
@@ -8,9 +9,10 @@ var moves = ["up","down","left","right"];
 
 // Constructor for the base snake. Takes in the request body.
 
-var createBaseSnake = function(requestBody){
+var createBaseSnake = function(requestBody,isStatic){
 
   id = requestBody.you;
+  isStatic = isStatic || false;
 
   var body = requestBody.snakes.find(findOurSnakeFromArray);
   var head = body.coords[0];
@@ -19,6 +21,7 @@ var createBaseSnake = function(requestBody){
   var thingsThatWillDisappear = [];
   var goalFood = [];
   var snakeHeads = [];
+  var moveNode = [];
 
   requestBody.snakes.splice(indexOfBody,1);
 
@@ -30,9 +33,23 @@ var createBaseSnake = function(requestBody){
   thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords));
   goalFood = reorganizeFood(requestBody.food,head);
 
-  var astar = aStarSnakes.astarSnake(requestBody.width,requestBody.height,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points,snakeHeads);
+  if (!isStatic){
+    moveNode = aStarSnakes.astarSnake(requestBody.width,requestBody.height,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points,snakeHeads);
 
-  move = whichDirection(head,astar);
+  }
+  else {
+    var otherSnakeBodies;
+    if (requestBody.snakes.length > 0){
+      otherSnakeBodies = requestBody.snakes[0].coords;
+    }
+    else {
+      otherSnakeBodies = [[0,0]];
+    }
+    var distanceToOtherSnakeHead = howFarAwayFromHead(head,otherSnakeBodies[0]);
+    moveNode = staticSnakes.staticSnake(body.coords,requestBody.height,requestBody.width,goalFood[0],otherSnakeBodies,distanceToOtherSnakeHead);
+  }
+
+    move = whichDirection(head,moveNode);
 
   return Object.create(baseSnake,{
     // Insert properties of the base snake object here
@@ -181,6 +198,12 @@ var differentSnakes = {
       case 4:
         return 'left';
     }
+  },
+  staticSnake: function (requestBody) {
+
+    var thisSnake = createBaseSnake(requestBody,true);
+
+    return thisSnake.myMove;
   },
 
   /**
