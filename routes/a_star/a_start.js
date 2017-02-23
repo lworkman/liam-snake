@@ -446,6 +446,78 @@ var addArrayToGraph = function(graph,coorArray,priority){
     return graph;
 }
 
+var findHowManyFreeNodesV2 = function(point,graph){
+  var start = [point[0],point[1]];
+  var pointList = [[start[0],start[1]]];
+  var pointRight = [];
+  var pointLeft = [];
+  var checkLeft = true;
+  var checkRight = true;
+  var count = 0;
+  
+  var graphCopy = [];
+  
+  for (var x = 0; x< graph.length; x++){
+  	graphCopy.push([]);
+    for (var y = 0; y<graph[x].length; y++){
+    graphCopy[x].push(graph[x][y]);
+    }
+  }
+  
+  while (pointList.length > 0){
+    var iterator = 0;
+    var checkLeft = true;
+    var checkRight = true;
+    while (!isItAWall([pointList[0][0],pointList[0][1]+iterator-1],graphCopy)){
+      iterator --;
+    }
+    while (!isItAWall([pointList[0][0],pointList[0][1]+iterator],graphCopy)){
+      graphCopy[pointList[0][0]][pointList[0][1]+iterator] = 0;
+      count ++;
+      pointRight = [pointList[0][0]+1,pointList[0][1]+iterator];
+      pointLeft = [pointList[0][0]-1,pointList[0][1]+iterator];
+      if (checkRight && !isItAWall(pointRight,graphCopy)){
+        pointList.push(pointRight);
+        checkRight = false;
+      }
+      else if (isItAWall(pointRight,graphCopy)){
+        checkRight = true;
+      }
+      if (checkLeft && !isItAWall(pointLeft,graphCopy)){
+        pointList.push(pointLeft);
+        checkLeft = false;
+      }
+      else if (isItAWall(pointLeft,graphCopy)){
+        checkLeft = true;
+      }
+      iterator ++;
+    }
+    pointList.splice(0,1);
+  }
+
+  return count;
+}
+
+var removeDuplicates = function(arrayWithDuplicates){
+
+  var arrayHolder = [];
+  var different = false;
+
+  for (var i = 0; i<arrayWithDuplicates.length; i++){
+    different = true;
+    for (var x = 0; x<arrayHolder.length; x++){
+      if (arrayHolder[x][0] == arrayWithDuplicates[i][0] && arrayHolder[x][1] == arrayWithDuplicates[i][1]){
+        different = false
+      }
+    }
+    if (different){
+      arrayHolder.push(arrayWithDuplicates[i]);
+    }
+  }
+
+  return arrayHolder;
+
+}
 /**
  * Checks if a point is a wall by seeing if it falls out of bounds or if it's priority is equal to 0
  *
@@ -590,17 +662,26 @@ var findPointsInDanger = function(graph,head){
  * @returns int
  */
 
-var isPointInDanger = function(point,graph){
+var isPointInDanger = function(point,graph,returnArrayBool){
+
+  returnArrayBool = returnArrayBool || false;
 
   var pointsToCheck = [[point[0]+1,point[1]],[point[0]-1,point[1]],[point[0],point[1]+1],[point[0],point[1]-1]];
   var dangerLevel = 0;
+  var returnArray = [];
 
   for(var i = 0; i<pointsToCheck.length;i++){
     if (isItAWall(pointsToCheck[i],graph)){
       dangerLevel ++;
     }
+    else if (returnArrayBool){
+      returnArray.push(pointsToCheck[i]);
+    }
   }
 
+  if (returnArrayBool){
+    return returnArray
+  }
   return dangerLevel;
 }
 
@@ -658,7 +739,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var head = [ownBody[0][0],ownBody[0][1]];
     ownBody.splice(0,1);
 
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 1, "ownBody": 0, "tunnel": 0, "danger": 0};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 3, "ownBody": 0, "tunnel": 0, "danger": 0};
     for(var x = 0; x < width; x++){
         var row = [];
         for (var y = 0; y < height; y++){
@@ -702,10 +783,13 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     //spotsThatMightBeInATunnel = checkIfPointsAreTunnels(spotsThatMightBeInATunnel,graph);
     //graph = addArrayToGraph(graph,spotsThatMightBeInATunnel,priority.tunnel);
 
-    graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
+    // graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
     graph = addArrayToGraph(graph,goals,priority.empty);
 
-    displayGraph(graph);
+    // console.log([head[0]-1,head[1]]);
+    // console.log(isPointInDanger([head[0]-1,head[1]],graph,true));
+
+    console.log(findHowManyFreeNodesV2(head,graph));
 
     var graphObject = new Graph(graph);
 
@@ -727,8 +811,6 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       console.log("Stalling!");
 
       //Get vector total of last 2 moves.
-      console.log(head);
-      console.log(ownBody[0]);
 
       var lastMoveVector = getMoveVector(head,ownBody[0]),
           secondLastMoveVector = getMoveVector(ownBody[0],ownBody[1]),
@@ -737,35 +819,28 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
       // CASE 1: If last two moves were an elbow
       if(vectorTotal[0] != 0 && vectorTotal[1] != 0){
-        console.log("1");
-        console.log(getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height));
-        console.log("-- "+sameDirectionMove+" --");
         var doubleBackVector = [secondLastMoveVector[0] * -1, secondLastMoveVector[1] * -1],
             doubleBackMove = [head[0] + doubleBackVector[0], head[1] + doubleBackVector[1]];
 
         //CASE 1.1: Can we double back?
         if(getWeightByCoordinates(graphObject,doubleBackMove[0],doubleBackMove[1],width,height) > 0){
           nextPoint = doubleBackMove;
-                  console.log("1.1");
         }
         //CASE 1.2: If not, try to move in same direction
         else if(getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height) > 0){
           nextPoint = sameDirectionMove;
-                  console.log("1.2");
         }
         //CASE 1.3: If we can't move in the same direction, go in the only possible direction.
         else {
-                  console.log("1.3");
           nextPoint = [(lastMoveVector[0] + (lastMoveVector[0] * -1) + doubleBackVector[0]) * -1,(lastMoveVector[1] + (lastMoveVector[1] * -1) + doubleBackVector[1]) *-1];
         }
       }
       //CASE 2: Last two moves were the same.
-      else{        console.log("2");
+      else{   
         var wasVertical = lastMoveVector[0] == 0,
             backupVectors = wasVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]];
         //CASE 2.1: Can we go straight?
         if(getWeightByCoordinates(graphObject,sameDirectionMove[0],sameDirectionMove[1],width,height) > 0){
-                  console.log("2.1");
           nextPoint = sameDirectionMove;
         }else{
           //CASE 2.2: Backup moves.
@@ -775,14 +850,10 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
               backupDistance2 = getDistance(ownTail,backupMove2),
               firstToCheck = backupDistance1 > backupDistance2 ? backupMove2 : backupMove1,
               secondToCheck = backupDistance1 > backupDistance2 ? backupMove1 : backupMove2;
-                      console.log("2.2");
-                      console.log(firstToCheck);
-                      console.log(lastMoveVector);
 
           if(getWeightByCoordinates(graphObject,firstToCheck[0],firstToCheck[1],width,height) > 0){
             nextPoint = firstToCheck;
           } else {
-            console.log("secondToCheck");
             nextPoint = secondToCheck;
           }
 
@@ -790,8 +861,6 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
       }
     }
-
-    console.log(nextPoint);
 
     return nextPoint;
 
