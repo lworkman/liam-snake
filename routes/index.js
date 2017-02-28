@@ -24,9 +24,9 @@ router.post('/remora/start', function (req, res) {
   // Response data
   var data = {
     color: '#'+Math.random().toString(16).substr(-6),
-    name: "Was Once A Man",
+    name: "Remora snake",
     head_url: "/images/bs-logo-light.svg", // optional, but encouraged!
-    taunt: "console.log('hacked')", // optional, but encouraged!
+    taunt: " I'm so lonely!", // optional, but encouraged!
   }
 
   return res.json(data)
@@ -59,7 +59,7 @@ router.post('/remora/move', function (req, res) {
   // Response data
   var data = {
     move: differentSnakes.staticSnake(req.body), // one of: ['up','down','left','right']
-    taunt: 'Get Rekt Jameson', // optional, but encouraged!
+    taunt: differentSnakes.staticTaunt(req.body) // optional, but encouraged!
   }
 
   return res.json(data)
