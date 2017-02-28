@@ -25,8 +25,8 @@ router.post('/random/start', function (req, res) {
   var data = {
     color: '#'+Math.random().toString(16).substr(-6),
     name: "Was Once A Man",
-    head_url: "http://www.placecage.com/c/200/200", // optional, but encouraged!
-    taunt: "Cobra LALALALALALALALALA!", // optional, but encouraged!
+    head_url: "/images/bs-logo-light.svg", // optional, but encouraged!
+    taunt: "console.log('hacked')", // optional, but encouraged!
   }
 
   return res.json(data)

@@ -446,7 +446,7 @@ var addArrayToGraph = function(graph,coorArray,priority){
     return graph;
 }
 
-var findHowManyFreeNodesV2 = function(point,graph){
+var findHowManyFreeNodesV2 = function(point,head,graph){
   var start = [point[0],point[1]];
   var pointList = [[start[0],start[1]]];
   var pointRight = [];
@@ -457,12 +457,17 @@ var findHowManyFreeNodesV2 = function(point,graph){
   
   var graphCopy = [];
   
+  if (isItAWall(point,graph)){
+    return 0;
+  }
+
   for (var x = 0; x< graph.length; x++){
   	graphCopy.push([]);
     for (var y = 0; y<graph[x].length; y++){
     graphCopy[x].push(graph[x][y]);
     }
   }
+  graphCopy[head[0]][head[1]] = 0;
   
   while (pointList.length > 0){
     var iterator = 0;
@@ -610,7 +615,7 @@ var isPointInTunnel = function(point,graph,isHead){
       }
     }
 
-    if ((verticalCovered == 2 && horizontalCovered == 0) || (verticalCovered == 0 && horizontalCovered == 2)){
+    if ((verticalCovered == 2 && horizontalCovered == 0) || (verticalCovered == 0 && horizontalCovered == 2) || (verticalCovered >0 && horizontalCovered > 0 && isHead)){
       return true;
     }
     return false;
@@ -739,7 +744,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var head = [ownBody[0][0],ownBody[0][1]];
     ownBody.splice(0,1);
 
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 3, "nearWalls": 3, "ownBody": 0, "tunnel": 0, "danger": 0};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 15, "nearWalls": 20, "ownBody": 0, "tunnel": 0, "danger": 0};
     for(var x = 0; x < width; x++){
         var row = [];
         for (var y = 0; y < height; y++){
@@ -760,34 +765,13 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var areaAroundWalls = findAreasAroundWalls(graph,priority.nearWalls);
     var areaAroundSnakeHeads = findAreasAroundCoorArray(snakeHeads,height,width);
 
-    //spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundSelf);
-    //spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundOtherSnakes);
-    //spotsThatMightBeInATunnel = spotsThatMightBeInATunnel.concat(areaAroundWalls);
-
     graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
     graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
     graph = addArrayToGraph(graph,areaAroundSnakeHeads,priority.full);
-
-    // if (health < 10 + ownBody.length || isPointInTunnel(head,graph,true)){
-    //   console.log("In tunnel!");
-    //   priority.tunnel = 20;
-    //   priority.danger = 90;
-    // }
-
-
-    var pointsInDanger = findPointsInDanger(graph,head);
-    graph = addArrayToGraph(graph,pointsInDanger,priority.danger);
-
-    //spotsThatMightBeInATunnel = checkIfPointsAreTunnels(spotsThatMightBeInATunnel,graph);
-    //graph = addArrayToGraph(graph,spotsThatMightBeInATunnel,priority.tunnel);
-
-    // graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
+    graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
     graph = addArrayToGraph(graph,goals,priority.empty);
-
-    // console.log([head[0]-1,head[1]]);
-    // console.log(isPointInDanger([head[0]-1,head[1]],graph,true));
 
     var graphObject = new Graph(graph);
 
@@ -798,8 +782,8 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       var end = graphObject.grid[goals[i][0]][goals[i][1]];
       var result = astar.search(graphObject,start,end);
 
-      if (result.length < pathLength && result.length > 0){
-
+      if (result.length < pathLength && result.length > 0 && (findHowManyFreeNodesV2([result[0].x,result[0].y],head,graph) > ownBody.length || health < 50)){
+        console.log(findHowManyFreeNodesV2([result[0].x,result[0].y],head,graph));
         nextPoint = [result[0].x,result[0].y];
         pathLength = result.length;
       }
@@ -827,8 +811,8 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
           //If our head is against a obstacle, do an area check instead.
           if(sameDirectionWeight == 0){
             var escapeDoubleBack = [head[0] + secondLastMoveVector[0], head[1] + secondLastMoveVector[1]],
-                doubleBackArea = findHowManyFreeNodesV2(doubleBackMove,graph),
-                escapeArea = findHowManyFreeNodesV2(escapeDoubleBack,graph);
+                doubleBackArea = findHowManyFreeNodesV2(doubleBackMove,head,graph),
+                escapeArea = findHowManyFreeNodesV2(escapeDoubleBack,head,graph);
 
             console.log(escapeDoubleBack,escapeArea);
             console.log(doubleBackMove,doubleBackArea);
@@ -844,27 +828,26 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         }
         //CASE 1.3: If we can't move in the same direction, go in the only possible direction.
         else {
-          nextPoint = [(lastMoveVector[0] + (lastMoveVector[0] * -1) + doubleBackVector[0]) * -1,(lastMoveVector[1] + (lastMoveVector[1] * -1) + doubleBackVector[1]) *-1];
+          var nextVector = [(lastMoveVector[0] + (lastMoveVector[0] * -1) + doubleBackVector[0]) * -1,(lastMoveVector[1] + (lastMoveVector[1] * -1) + doubleBackVector[1]) *-1];
+
+          nextPoint = [head[0] + nextVector[0],head[1] + nextVector[1]];
         }
       }
       //CASE 2: Last two moves were the same.
-      else{   
+      else{  
         var wasVertical = lastMoveVector[0] == 0,
             backupVectors = wasVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]];
         //CASE 2.1: Can we go straight?
-        if(sameDirectionWeight > 0){
+        if(sameDirectionWeight > 0 && findHowManyFreeNodesV2(sameDirectionMove,head,graph) > ownBody.length/2){
           nextPoint = sameDirectionMove;
         }else{
           //CASE 2.2: Backup moves.
           var backupMove1 = [head[0] + backupVectors[0][0],head[1] + backupVectors[0][1]],
               backupMove2 = [head[0] + backupVectors[1][0],head[1] + backupVectors[1][1]],
-              backupArea1 = findHowManyFreeNodesV2(backupMove1,graph),
-              backupArea2 = findHowManyFreeNodesV2(backupMove2,graph),
+              backupArea1 = findHowManyFreeNodesV2(backupMove1,head,graph),
+              backupArea2 = findHowManyFreeNodesV2(backupMove2,head,graph),
               firstToCheck = backupArea1 > backupArea2 ? backupMove1 : backupMove2,
               secondToCheck = backupArea1 > backupArea2 ? backupMove2 : backupMove1;
-
-          console.log(backupArea1,backupMove1);
-          console.log(backupArea2,backupMove2);
           if(getWeightByCoordinates(graphObject,firstToCheck[0],firstToCheck[1],width,height) > 0){
             nextPoint = firstToCheck;
           } else {
@@ -876,6 +859,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       }
     }
 
+    console.log(nextPoint);
     return nextPoint;
 
 }
