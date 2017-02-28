@@ -18,7 +18,7 @@ router.post('/start', function (req, res) {
 })
 
 // Handle POST request to '/start'
-router.post('/random/start', function (req, res) {
+router.post('/remora/start', function (req, res) {
   // NOTE: Do something here to start the game
 
   // Response data
@@ -50,7 +50,7 @@ router.post('/move', function (req, res) {
 });
 
 // Handle POST request to '/move'
-router.post('/random/move', function (req, res) {
+router.post('/remora/move', function (req, res) {
   // NOTE: Do something here to generate your move
 
   //extraFunctions.ourSnakeID = req.body.you;
