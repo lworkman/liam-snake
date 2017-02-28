@@ -468,7 +468,7 @@ var findHowManyFreeNodesV2 = function(point,head,graph){
     }
   }
   graphCopy[head[0]][head[1]] = 0;
-  
+
   while (pointList.length > 0){
     var iterator = 0;
     var checkLeft = true;
@@ -789,6 +789,38 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       }
     }
 
+    //If we have a valid goal, we want to check to see if we'll still be able to get out once we reach it.
+    //Rather naive, but it does help the snake out of a few situations.
+    //TODO: Remove tail from graph.
+    if(nextPoint.length > 0){
+      var newBodyCoords = [];
+
+      var newCoordsLength = (ownBody.length < result.length) ? result.length - ownBody.length : result.length;
+
+      for(i = result.length - 1; i > result.length - newCoordsLength; i--){
+        newBodyCoords.push([result[i].x,result[i].y]);
+      }
+
+      var futureGraph = [];
+      for(i = 0; i < graph.length; i++){
+          futureGraph[i] = graph[i].slice();
+      }
+      futureGraph = addArrayToGraph(futureGraph,newBodyCoords,priority.ownBody);
+      futureGraph = addArrayToGraph(futureGraph,[ownTail],priority.empty);
+      var futureGraphObject = new Graph(futureGraph);
+
+      var oldGoal = result[result.length-1],
+          goal = futureGraphObject.grid[oldGoal.x][oldGoal.y],
+          tailNode = futureGraphObject.grid[ownTail[0]][ownTail[1]];
+
+      var futureResult = astar.search(futureGraphObject,goal,tailNode);
+
+      if(futureResult.length == 0){
+        nextPoint = [];
+      }
+
+    }
+
     if(nextPoint.length == 0){
       console.log("Stalling!");
 
@@ -808,6 +840,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
         //CASE 1.1: Can we double back?
         if(doubleBackWeight > 0){
+          console.log('1.1');
           //If our head is against a obstacle, do an area check instead.
           if(sameDirectionWeight == 0){
             var escapeDoubleBack = [head[0] + secondLastMoveVector[0], head[1] + secondLastMoveVector[1]],
@@ -824,24 +857,28 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         }
         //CASE 1.2: If not, try to move in same direction
         else if(sameDirectionWeight > 0){
+          console.log('1.2');
           nextPoint = sameDirectionMove;
         }
         //CASE 1.3: If we can't move in the same direction, go in the only possible direction.
         else {
+          console.log('1.3');
           var nextVector = [(lastMoveVector[0] + (lastMoveVector[0] * -1) + doubleBackVector[0]) * -1,(lastMoveVector[1] + (lastMoveVector[1] * -1) + doubleBackVector[1]) *-1];
 
           nextPoint = [head[0] + nextVector[0],head[1] + nextVector[1]];
         }
       }
       //CASE 2: Last two moves were the same.
-      else{  
+      else{
         var wasVertical = lastMoveVector[0] == 0,
             backupVectors = wasVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]];
         //CASE 2.1: Can we go straight?
         if(sameDirectionWeight > 0 && findHowManyFreeNodesV2(sameDirectionMove,head,graph) > ownBody.length/2){
-          nextPoint = sameDirectionMove;
+            console.log('2.1');
+            nextPoint = sameDirectionMove;
         }else{
           //CASE 2.2: Backup moves.
+          console.log('2.2');
           var backupMove1 = [head[0] + backupVectors[0][0],head[1] + backupVectors[0][1]],
               backupMove2 = [head[0] + backupVectors[1][0],head[1] + backupVectors[1][1]],
               backupArea1 = findHowManyFreeNodesV2(backupMove1,head,graph),
