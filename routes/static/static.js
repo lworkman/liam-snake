@@ -20,7 +20,7 @@ function staticSnakeController(ownBody,height,width,food,otherSnake,distance){
         graph[otherSnake[i][0]][otherSnake[i][1]] = 0;
     }
 
-    if (distance < 6 && ownBody.length >= 8){
+    if (distance < 6 && ownBody.length >= 4){
         goal = besideHead(otherSnake,graph);
     }
     else if (ownBody.length < 5 || (ownBody[ownBody.length-1][0] == ownBody[ownBody.length-2][0] && ownBody[ownBody.length-1][1] == ownBody[ownBody.length-2][1])){
