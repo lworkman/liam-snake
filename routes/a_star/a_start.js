@@ -561,64 +561,76 @@ var getDistance = function(point1,point2){
   return Math.abs(point1[0] - point2[0]) + Math.abs(point1[1] - point2[1]);
 };
 
+var checkExits = function(graph,point){
 
-/**
- * Checks if an array of points are in tunnels by looping through the isPointInTunnel() function.
- *
- * @param An array of points
- * @param The graph of nodes
- *
- * @returns Array of points in tunnels
- */
+  var amount = {"horizontal": 0, "vertical": 0};
 
-var checkIfPointsAreTunnels = function(points,graph){
-
-  var pointHolder = [];
-
-  for (var i =0; i<points.length;i++){
-    if (isPointInTunnel(points[i],graph)){
-      pointHolder.push(points[i]);
-    }
+  if (isItAWall([point[0]+1,point[1]],graph)){
+    amount.horizontal ++;
   }
-  return pointHolder;
+  if (isItAWall([point[0]-1,point[1]],graph)){
+    amount.horizontal ++;
+  }
+  if (isItAWall([point[0],point[1]-1],graph)){
+    amount.vertical ++;
+  }
+  if (isItAWall([point[0],point[1]+1],graph)){
+    amount.vertical ++;
+  }
+
+  return amount;
+
 }
 
 /**
- * Checks if a point is in a tunnel by looking at the surrounding blocks. A point is in a tunnel if
- * it is covered on two opposite sides exactly and is empty.
- *
- * @param The point to check
- * @param The graph of nodes
- * @returns bool
+ * NEEDS TO NOT HAVE HARD CODED PRIORITY
  */
 
-var isPointInTunnel = function(point,graph,isHead){
+var findTunnelsAndDangerPoints = function(graph,tunnel,head){
 
-    isHead = isHead || false;
+  var head = head || false;
+  var tunnel = tunnel || false;
+  var coordHolder = [];
 
-    if (isItAWall(point,graph) && !isHead){
-      return false;
-    }
+  var graphCopy = [];
 
-    var directions = [[point[0],point[1]-1],[point[0],point[1]+1],[point[0]+1,point[1]],[point[0]-1,point[1]]];
-    var horizontalCovered = 0;
-    var verticalCovered = 0;
+  for(i = 0; i < graph.length; i++){
+      graphCopy[i] = graph[i].slice();
+  }
 
-    for (var i = 0; i< directions.length; i++){
-      if (isItAWall(directions[i],graph)){
-        if (i < 2){
-          verticalCovered ++;
+  if (head != false){
+    graphCopy[head[0]][head[1]] = 0;
+  }
+
+
+  for (var x = 0; x < graphCopy.length; x++){
+    for (var y = 0; y < graphCopy[x].length; y++){
+      if (graphCopy[x][y] != 0 && graphCopy[x][y] != 2){
+
+        var exits = checkExits(graphCopy,[x,y]);
+
+        if ((exits.horizontal == 2 && exits.vertical == 0 && tunnel) || (exits.vertical == 2 && exits.horizontal == 0 && tunnel)){
+          coordHolder.push([x,y]);
         }
-        else {
-          horizontalCovered ++;
+        else if (exits.horizontal + exits.vertical > 2 && !tunnel){
+          coordHolder.push([x,y]);
         }
       }
     }
+  }
 
-    if ((verticalCovered == 2 && horizontalCovered == 0) || (verticalCovered == 0 && horizontalCovered == 2) || (verticalCovered >0 && horizontalCovered > 0 && isHead)){
-      return true;
-    }
-    return false;
+  return coordHolder;
+
+}
+
+var checkIfPointInTunnel = function(point,graph) {
+  var exits = checkExits(graph,point);
+
+  if ((exits.horizontal == 2 || exits.vertical == 2)){
+    return true;
+  }
+  
+  return false;
 
 }
 
@@ -667,29 +679,6 @@ var findPointsInDanger = function(graph,head){
  * @returns int
  */
 
-var isPointInDanger = function(point,graph,returnArrayBool){
-
-  returnArrayBool = returnArrayBool || false;
-
-  var pointsToCheck = [[point[0]+1,point[1]],[point[0]-1,point[1]],[point[0],point[1]+1],[point[0],point[1]-1]];
-  var dangerLevel = 0;
-  var returnArray = [];
-
-  for(var i = 0; i<pointsToCheck.length;i++){
-    if (isItAWall(pointsToCheck[i],graph)){
-      dangerLevel ++;
-    }
-    else if (returnArrayBool){
-      returnArray.push(pointsToCheck[i]);
-    }
-  }
-
-  if (returnArrayBool){
-    return returnArray
-  }
-  return dangerLevel;
-}
-
 var getWeightByCoordinates = function(graphObject,x,y,width,height){
   if(x < 0 || y < 0 || x > width - 1 || y > height - 1){
     return 0;
@@ -722,6 +711,18 @@ var displayGraph = function(graph){
 
 }
 
+var checkIfByThing = function(point,thing){
+
+  for (var i = 0; i< thing.length; i++){
+    if (getDistance(point,thing[i]) < 2){
+      return true;
+    }
+  }
+
+  return false;
+
+}
+
 /**
  * The basic function that calls A* multiple times to try and figure out the best path.
  *
@@ -740,11 +741,13 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var graph = [];
     var nextPoint = [];
     var pathLength = 1000;
+    var goalPath = [];
     var spotsThatMightBeInATunnel = [];
     var head = [ownBody[0][0],ownBody[0][1]];
+    var endGoal = 0;
     ownBody.splice(0,1);
 
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 15, "nearWalls": 20, "ownBody": 0, "tunnel": 0, "danger": 0};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 15, "nearWalls": 9, "ownBody": 0, "tunnel": -2, "danger": -1, "food": 1};
     for(var x = 0; x < width; x++){
         var row = [];
         for (var y = 0; y < height; y++){
@@ -764,8 +767,10 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var areaAroundSelf = findAreasAroundCoorArray(ownBody,height,width);
     var areaAroundWalls = findAreasAroundWalls(graph,priority.nearWalls);
     var areaAroundSnakeHeads = findAreasAroundCoorArray(snakeHeads,height,width);
+    var areaAroundFood = findAreasAroundCoorArray(goals,height,width);
 
     graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
+    graph = addArrayToGraph(graph,areaAroundFood,priority.food)
     graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
@@ -773,32 +778,50 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
     graph = addArrayToGraph(graph,goals,priority.empty);
 
+    var dangerPoints = findTunnelsAndDangerPoints(graph);
+    var tunnels = findTunnelsAndDangerPoints(graph,true,head);
+
+    graph = addArrayToGraph(graph,dangerPoints,priority.danger);
+
+    if (checkIfPointInTunnel(head,graph) || health < 50){
+      console.log("--IN TUNNEL--");
+    }
+    else {
+      graph = addArrayToGraph(graph,tunnels,priority.tunnel);
+    }
+
     var graphObject = new Graph(graph);
 
     var start = graphObject.grid[head[0]][head[1]];
 
     for (var i = 0; i<goals.length;i++){
 
+      // if (checkIfByThing(goals[i],ownBody) && ownBody.length > 10 && health > 40){
+      //   break;
+      // }
+
       var end = graphObject.grid[goals[i][0]][goals[i][1]];
       var result = astar.search(graphObject,start,end);
 
       if (result.length < pathLength && result.length > 0 && (findHowManyFreeNodesV2([result[0].x,result[0].y],head,graph) > ownBody.length || health < 50)){
-        console.log(findHowManyFreeNodesV2([result[0].x,result[0].y],head,graph));
+        goalPath = result;
         nextPoint = [result[0].x,result[0].y];
         pathLength = result.length;
+        endGoal = i;
       }
     }
+
 
     //If we have a valid goal, we want to check to see if we'll still be able to get out once we reach it.
     //Rather naive, but it does help the snake out of a few situations.
     //TODO: Remove tail from graph.
-    if(nextPoint.length > 0){
+    if(nextPoint.length > 0 && health > 40){
       var newBodyCoords = [];
 
-      var newCoordsLength = (ownBody.length < result.length) ? result.length - ownBody.length : result.length;
+      var newCoordsLength = (ownBody.length < goalPath.length) ? goalPath.length - ownBody.length : goalPath.length;
 
-      for(i = result.length - 1; i > result.length - newCoordsLength; i--){
-        newBodyCoords.push([result[i].x,result[i].y]);
+      for(i = goalPath.length - 1; i > goalPath.length - newCoordsLength; i--){
+        newBodyCoords.push([goalPath[i].x,goalPath[i].y]);
       }
 
       var futureGraph = [];
@@ -808,10 +831,10 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       futureGraph = addArrayToGraph(futureGraph,newBodyCoords,priority.ownBody);
       futureGraph = addArrayToGraph(futureGraph,[ownTail],priority.empty);
       var futureGraphObject = new Graph(futureGraph);
+      var oldGoal = goalPath[goalPath.length-1];
+      var goal = futureGraphObject.grid[oldGoal.x][oldGoal.y];
+      var tailNode = futureGraphObject.grid[ownTail[0]][ownTail[1]];
 
-      var oldGoal = result[result.length-1],
-          goal = futureGraphObject.grid[oldGoal.x][oldGoal.y],
-          tailNode = futureGraphObject.grid[ownTail[0]][ownTail[1]];
 
       var futureResult = astar.search(futureGraphObject,goal,tailNode);
 
@@ -820,6 +843,21 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       }
 
     }
+
+    //Try to wrap the food instead of eat it under certain conditions
+
+    // if (nextPoint.length > 0 && getDistance(head,goals[endGoal]) < 2 && health > 50 && ownBody.length > 10){
+
+    //   graph = addArrayToGraph(graph,[goals[endGoal]],priority.full);
+
+    //   graphObject = new Graph(graph);
+
+    //   goals.splice(endGoal,1);
+    //   var end = graphObject.grid[goals[0][0]][goals[0][1]];
+    //   var start = graphObject.grid[head[0]][head[1]];
+    //   var result = astar.search(graphObject,start,end);
+    //   nextPoint = [result[0].x,result[0].y];
+    // }
 
     if(nextPoint.length == 0){
       console.log("Stalling!");
@@ -896,7 +934,6 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       }
     }
 
-    console.log(nextPoint);
     return nextPoint;
 
 }
