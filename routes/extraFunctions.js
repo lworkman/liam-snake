@@ -5,6 +5,7 @@ var staticSnakes = require("./static/static.js");
 
 var baseSnake = { };
 var id = "";
+var body = [];
 var moves = ["up","down","left","right"];
 
 // Constructor for the base snake. Takes in the request body.
@@ -14,7 +15,7 @@ var createBaseSnake = function(requestBody,isStatic){
   id = requestBody.you;
   isStatic = isStatic || false;
 
-  var body = requestBody.snakes.find(findOurSnakeFromArray);
+  body = requestBody.snakes.find(findOurSnakeFromArray);
   var head = body.coords[0];
   var indexOfBody = requestBody.snakes.indexOf(body);
   var badSnakes = [];
@@ -174,6 +175,19 @@ var disappearByTimeSnakeGetsThere = function(head,obstacles){
   return holder;
 }
 
+var remoraTaunt = function(requestBody){
+  id = requestBody.you;
+  console.log(body);
+  var length = body.coords.length;
+
+  if (length < 10){
+    return "Feed me!"
+  }
+  else {
+    return "I'm full!"
+  }
+}
+
 var differentSnakes = {
 
   //====================
@@ -216,7 +230,6 @@ var differentSnakes = {
 
     id = requestBody.you;
 
-
     var body = requestBody.snakes.find(findOurSnakeFromArray);
 
     if (body.coords[0][1] == body.coords[1][1]) {
@@ -239,6 +252,11 @@ var differentSnakes = {
     var thisSnake = createBaseSnake(requestBody);
 
     return thisSnake.myMove;
+  },
+
+  staticTaunt: function (requestBody){
+    var taunt = remoraTaunt(requestBody);
+    return taunt;
   }
 
 };
