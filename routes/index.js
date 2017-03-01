@@ -2,6 +2,24 @@ var express = require('express');
 var router  = express.Router();
 var differentSnakes = require("./extraFunctions.js");
 
+router.get('/head-image', function(req,res){
+    var options = {
+        root: __dirname + '/',
+        dotfiles: 'deny',
+        headers: {
+            'x-timestamp': Date.now(),
+            'x-sent' : true,
+        }
+    };
+
+    res.sendFile('wasonceaman.jpg',options,function(err){
+        if(err){
+            console.log(err);
+        }else{
+            console.log('Sent: wasonceaman.jpg');
+        }
+    });
+});
 // Handle POST request to '/start'
 router.post('/start', function (req, res) {
   // NOTE: Do something here to start the game
@@ -10,7 +28,7 @@ router.post('/start', function (req, res) {
   var data = {
     color: '#'+Math.random().toString(16).substr(-6),
     name: "Was Once A Man",
-    head_url: "http://www.placecage.com/c/200/200", // optional, but encouraged!
+    head_url: "/head-image", // optional, but encouraged!
     taunt: "Cobra LALALALALALALALALA!", // optional, but encouraged!
   }
 
