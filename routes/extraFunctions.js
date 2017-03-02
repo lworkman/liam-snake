@@ -28,7 +28,7 @@ var createBaseSnake = function(requestBody,isStatic){
 
   for (var i = 0; i< requestBody.snakes.length; i++){
      badSnakes = badSnakes.concat(requestBody.snakes[i].coords);
-     snakeHeads = snakeHeads.concat(requestBody.snakes[i].coords[0]);
+     snakeHeads.push(requestBody.snakes[i].coords[0]);
   }
 
   thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords));

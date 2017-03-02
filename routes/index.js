@@ -26,7 +26,7 @@ router.post('/start', function (req, res) {
 
   // Response data
   var data = {
-    color: '#'+Math.random().toString(16).substr(-6),
+    color: '#ffffff',
     name: "Was Once A Man",
     head_url: "/head-image", // optional, but encouraged!
     taunt: "Cobra LALALALALALALALALA!", // optional, but encouraged!

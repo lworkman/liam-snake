@@ -723,6 +723,21 @@ var checkIfByThing = function(point,thing){
 
 }
 
+var checkIfFoodWrapped = function(food,graph,head){
+  
+  var graphCopy = [];
+
+  for(var i = 0; i<graph.length; i++){
+    graphCopy.push(graph[i]);
+  }
+
+  graphCopy[head[0]][head[1]] = 0;
+
+  var exits = checkExits(graphCopy,food);
+
+  return exits.horizontal + exits.vertical;
+}
+
 /**
  * The basic function that calls A* multiple times to try and figure out the best path.
  *
@@ -745,9 +760,11 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var spotsThatMightBeInATunnel = [];
     var head = [ownBody[0][0],ownBody[0][1]];
     var endGoal = 0;
+    var closestSnake = [];
+    var closestSnakeDistance = 100;
     ownBody.splice(0,1);
 
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 15, "nearWalls": 9, "ownBody": 0, "tunnel": -2, "danger": -1, "food": 1};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 15, "nearWalls": 9, "ownBody": 0, "tunnel": -2, "danger": -1, "food": 1, "foodTrap": 30};
     for(var x = 0; x < width; x++){
         var row = [];
         for (var y = 0; y < height; y++){
@@ -775,7 +792,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
     graph = addArrayToGraph(graph,areaAroundSnakeHeads,priority.full);
-    graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
+    //graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
     graph = addArrayToGraph(graph,goals,priority.empty);
 
     var dangerPoints = findTunnelsAndDangerPoints(graph);
@@ -790,27 +807,77 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       graph = addArrayToGraph(graph,tunnels,priority.tunnel);
     }
 
+    // Opens a tunnel for wrapped food
+
+    for (var i = 0; i<goals.length; i++){
+      if (checkIfFoodWrapped(goals[i],graph,head) >2 && health > 10 && ownBody.length>8){
+        graph[goals[i][0]][goals[i][1]] = 0;
+
+        var direction = "";
+
+        if (!isItAWall([goals[i][0] + 1,goals[i][1]],graph)){
+          direction = "right";
+        }
+        else if (!isItAWall([goals[i][0] - 1,goals[i][1]],graph)){
+          direction = "left";
+        }
+        else if (!isItAWall([goals[i][0],goals[i][1] + 1],graph)){
+          direction = "down";
+        }
+        else if (!isItAWall([goals[i][0],goals[i][1] - 1],graph)){
+          direction = "up";
+        }
+
+        for(var z = 0; z < 3; z++){
+          switch(direction){
+            case "up":
+              if (!isItAWall([goals[i][0],goals[i][1] - z],graph)){
+                graph[goals[i][0]][goals[i][1]-z] = priority.foodTrap;
+              }
+              break;
+            case "down":
+              if (!isItAWall([goals[i][0],goals[i][1] + z],graph)){
+                graph[goals[i][0]][goals[i][1]+z] = priority.foodTrap;
+              }
+              break;
+            case "left":
+              if (!isItAWall([goals[i][0]-z,goals[i][1]],graph)){
+                graph[goals[i][0]-z][goals[i][1]] = priority.foodTrap;
+              }
+              break;
+            case "right":
+              if (!isItAWall([goals[i][0]+z,goals[i][1]],graph)){
+                graph[goals[i][0]+z][goals[i][1]] = priority.foodTrap;
+              }
+              break;
+          }
+        }
+
+      }
+    }
+
     var graphObject = new Graph(graph);
 
     var start = graphObject.grid[head[0]][head[1]];
 
-    for (var i = 0; i<goals.length;i++){
+    //Pick which food to go after
 
-      // if (checkIfByThing(goals[i],ownBody) && ownBody.length > 10 && health > 40){
-      //   break;
-      // }
+    for (var i = 0; i<goals.length;i++){
 
       var end = graphObject.grid[goals[i][0]][goals[i][1]];
       var result = astar.search(graphObject,start,end);
 
-      if (result.length < pathLength && result.length > 0 && (findHowManyFreeNodesV2([result[0].x,result[0].y],head,graph) > ownBody.length || health < 50)){
+      if (isItAWall(goals[i],graph)){
+        continue;
+      }
+      
+      if (result.length < pathLength && result.length  > 0 && (findHowManyFreeNodesV2([result[0].x,result[0].y],head,graph) > ownBody.length || health < 50)){
         goalPath = result;
         nextPoint = [result[0].x,result[0].y];
         pathLength = result.length;
         endGoal = i;
       }
     }
-
 
     //If we have a valid goal, we want to check to see if we'll still be able to get out once we reach it.
     //Rather naive, but it does help the snake out of a few situations.
@@ -844,20 +911,43 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
     }
 
-    //Try to wrap the food instead of eat it under certain conditions
+    for (var i = 0; i <snakeHeads.length; i++){
+      if (getDistance(snakeHeads[i],head) < closestSnakeDistance){
+        closestSnake = snakeHeads[i];
+        closestSnakeDistance = getDistance(snakeHeads[i],head);
+      }
+    }
 
-    // if (nextPoint.length > 0 && getDistance(head,goals[endGoal]) < 2 && health > 50 && ownBody.length > 10){
+    //Attempt to wrap food if health is high enough
+    if (health > 50 && getDistance(head,goals[endGoal]) == 1 && ownBody.length>8){
 
-    //   graph = addArrayToGraph(graph,[goals[endGoal]],priority.full);
+      if (checkIfFoodWrapped(goals[endGoal],graph,head) > 1 && checkIfFoodWrapped(goals[endGoal],graph,head) < 4){
+        console.log("Continuing wrap");
+        nextPoint=[head[0]-ownBody[0][0]+head[0],head[1]-ownBody[0][1]+head[1]];
+        if (isItAWall(nextPoint,graph)){
+          nextPoint = [];
+        }
+      }
+      else if (head[0] != nextPoint [0]){
+        if ((head[1] < closestSnake[1] || isItAWall([head[0],head[1]-1],graph)) && !isItAWall([head[0],head[1]+1],graph)){
+          nextPoint = [head[0],head[1]+1];
+        }
+        else if (!isItAWall([head[0],head[1]-1],graph)){
+          nextPoint = [head[0],head[1]-1];
+        }
+      }
+      else {
+        if ((head[0] > closestSnake[0]|| isItAWall([head[0]+1,head[1]],graph)) && !isItAWall([head[0]-1,head[1]],graph)){
+          nextPoint = [head[0]-1,head[1]];
+        }
+        else if (!isItAWall([head[0]+1,head[1]],graph)) {
+          nextPoint = [head[0]+1,head[1]];
+        }
 
-    //   graphObject = new Graph(graph);
+      }
 
-    //   goals.splice(endGoal,1);
-    //   var end = graphObject.grid[goals[0][0]][goals[0][1]];
-    //   var start = graphObject.grid[head[0]][head[1]];
-    //   var result = astar.search(graphObject,start,end);
-    //   nextPoint = [result[0].x,result[0].y];
-    // }
+    }
+
 
     if(nextPoint.length == 0){
       console.log("Stalling!");
@@ -932,6 +1022,20 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         }
 
       }
+    }
+
+
+    if (isItAWall(nextPoint,graph)){
+        nextPoint=[head[0]-1,head[1]];
+    }
+    if (isItAWall(nextPoint,graph)){
+        nextPoint=[head[0]+1,head[1]];
+    }
+    if (isItAWall(nextPoint,graph)){
+        nextPoint=[head[0],head[1]-1];
+    }
+    if (isItAWall(nextPoint,graph)){
+        nextPoint=[head[0],head[1]+1];
     }
 
     return nextPoint;
