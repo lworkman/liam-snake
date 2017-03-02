@@ -723,7 +723,7 @@ var checkIfByThing = function(point,thing){
 
 }
 
-var checkIfFoodWrapped = function(food,graph,head){
+var isFoodWrapped = function(food, graph, head){
   
   var graphCopy = [];
 
@@ -787,7 +787,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var areaAroundFood = findAreasAroundCoorArray(goals,height,width);
 
     graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
-    graph = addArrayToGraph(graph,areaAroundFood,priority.food)
+    graph = addArrayToGraph(graph,areaAroundFood,priority.food);
     graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
@@ -810,7 +810,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     // Opens a tunnel for wrapped food
 
     for (var i = 0; i<goals.length; i++){
-      if (checkIfFoodWrapped(goals[i],graph,head) >2 && health > 10 && ownBody.length>8){
+      if (isFoodWrapped(goals[i],graph,head) >2 && health > 10 && ownBody.length>8){
         graph[goals[i][0]][goals[i][1]] = 0;
 
         var direction = "";
@@ -921,7 +921,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     //Attempt to wrap food if health is high enough
     if (health > 50 && getDistance(head,goals[endGoal]) == 1 && ownBody.length>8){
 
-      if (checkIfFoodWrapped(goals[endGoal],graph,head) > 1 && checkIfFoodWrapped(goals[endGoal],graph,head) < 4){
+      if (isFoodWrapped(goals[endGoal],graph,head) > 1 && isFoodWrapped(goals[endGoal],graph,head) < 4){
         console.log("Continuing wrap");
         nextPoint=[head[0]-ownBody[0][0]+head[0],head[1]-ownBody[0][1]+head[1]];
         if (isItAWall(nextPoint,graph)){
@@ -999,9 +999,28 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       //CASE 2: Last two moves were the same.
       else{
         var wasVertical = lastMoveVector[0] == 0,
-            backupVectors = wasVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]];
+            backupVectors = wasVertical ? [[-1,0],[1,0]] : [[0,-1],[0,1]],
+            willBlockWholeBoard = false;
+
+        //Prevent stalling the whole height/width of the board and blocking off half.
+        if(wasVertical){
+          if(ownBody.length >= height){
+            var heightMoveVector = getMoveVector(sameDirectionMove,ownBody[height - 3]);
+            if(heightMoveVector[0] == 0 && (heightMoveVector[1] == height - 1 || heightMoveVector[1] == 1 - height)){
+              willBlockWholeBoard = true;
+            }
+          }
+        }else{
+          if(ownBody.length >= width){
+            var widthMoveVector = getMoveVector(sameDirectionMove,ownBody[width - 3]);
+            if((widthMoveVector[0] == width - 1 || widthMoveVector[0] == 1 - width) && widthMoveVector[1] == 0){
+              willBlockWholeBoard = true;
+            }
+          }
+        }
+
         //CASE 2.1: Can we go straight?
-        if(sameDirectionWeight > 0 && findHowManyFreeNodesV2(sameDirectionMove,head,graph) > ownBody.length/2){
+        if(sameDirectionWeight > 0 && findHowManyFreeNodesV2(sameDirectionMove,head,graph) > ownBody.length/2 && !willBlockWholeBoard){
             console.log('2.1');
             nextPoint = sameDirectionMove;
         }else{
@@ -1013,31 +1032,35 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
               backupArea2 = findHowManyFreeNodesV2(backupMove2,head,graph),
               firstToCheck = backupArea1 > backupArea2 ? backupMove1 : backupMove2,
               secondToCheck = backupArea1 > backupArea2 ? backupMove2 : backupMove1;
+          console.log(backupMove1,backupArea1);
+          console.log(backupMove2,backupArea2);
           if(getWeightByCoordinates(graphObject,firstToCheck[0],firstToCheck[1],width,height) > 0){
             nextPoint = firstToCheck;
-          } else {
+          } else if(getWeightByCoordinates(graphObject,secondToCheck[0],secondToCheck[1],width,height) > 0){
             nextPoint = secondToCheck;
+          } else {
+            nextPoint = firstToCheck;
           }
 
         }
 
       }
-    }
-
-
-    if (isItAWall(nextPoint,graph)){
+    } else {
+      if (isItAWall(nextPoint,graph)){
         nextPoint=[head[0]-1,head[1]];
-    }
-    if (isItAWall(nextPoint,graph)){
+      }
+      if (isItAWall(nextPoint,graph)){
         nextPoint=[head[0]+1,head[1]];
-    }
-    if (isItAWall(nextPoint,graph)){
+      }
+      if (isItAWall(nextPoint,graph)){
         nextPoint=[head[0],head[1]-1];
-    }
-    if (isItAWall(nextPoint,graph)){
+      }
+      if (isItAWall(nextPoint,graph)){
         nextPoint=[head[0],head[1]+1];
+      }
     }
 
+    console.log(nextPoint);
     return nextPoint;
 
 }
