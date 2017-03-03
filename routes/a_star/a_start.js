@@ -730,6 +730,15 @@ var isFoodInCorner = function(food,graph){
   return false;
 }
 
+var isFoodCloseToEnemy = function(food,enemySnakes,head){
+  for (var i = 0; i<enemySnakes.length; i++){
+    if (getDistance(food,head) == 1 && getDistance(food,enemySnakes[i][0]) < 3){
+      return true;
+    }
+  }
+  return false;
+}
+
 var isFoodWrapped = function(food, graph, head){
   
   var graphCopy = [];
@@ -743,6 +752,10 @@ var isFoodWrapped = function(food, graph, head){
   var exits = checkExits(graphCopy,food);
 
   return exits.horizontal + exits.vertical;
+}
+
+var isSnakeHeadingAwayFromUs = function(snake,head,graph){
+  var direction = "up";
 }
 
 /**
@@ -759,7 +772,7 @@ var isFoodWrapped = function(food, graph, head){
  * @returns The point for the next move
  */
 
-function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsThatWillDisappear,health,snakeHeads){
+function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsThatWillDisappear,health,fullSnakes){
     var graph = [];
     var nextPoint = [];
     var pathLength = 1000;
@@ -790,7 +803,6 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var areaAroundOtherSnakes = findAreasAroundCoorArray(badSnakes,height,width);
     var areaAroundSelf = findAreasAroundCoorArray(ownBody,height,width);
     var areaAroundWalls = findAreasAroundWalls(graph,priority.nearWalls);
-    var areaAroundSnakeHeads = findAreasAroundCoorArray(snakeHeads,height,width);
     var areaAroundFood = findAreasAroundCoorArray(goals,height,width);
 
     graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
@@ -798,9 +810,14 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
-    graph = addArrayToGraph(graph,areaAroundSnakeHeads,priority.full);
-    //graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
     graph = addArrayToGraph(graph,goals,priority.empty);
+    
+    for(var i = 0; i < fullSnakes.length; i++){
+      var areaAroundSnakeHeads = findAreasAroundCoorArray([fullSnakes[i][0]],height,width);
+      graph = addArrayToGraph(graph,areaAroundSnakeHeads,priority.full);
+    }
+
+    //graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
     var dangerPoints = findTunnelsAndDangerPoints(graph);
     var tunnels = findTunnelsAndDangerPoints(graph,true,head);
@@ -867,6 +884,61 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
     var start = graphObject.grid[head[0]][head[1]];
 
+    //Go on the offensive
+
+    if (health > 75 && ownBody.length > 6){
+
+      //First find nearest enemy that isn't moving away.
+      var enemyDistance = 25;
+      var closestEnemySnake = -1;
+
+      for(var i = 0; i<fullSnakes.length; i++){
+
+        var enemyHeadDistance = getDistance(head,fullSnakes[i][0]);
+        var enemyNeckDistance = getDistance(head,fullSnakes[i][1]);
+
+        if (enemyHeadDistance < enemyDistance && enemyHeadDistance < enemyNeckDistance){
+          closestEnemySnake = i;
+        }
+      }
+
+      if (closestEnemySnake != -1){
+
+          var potentialPoint = [];
+          var killPointOne = [];
+          var killPointTwo = [];
+
+          potentialPoint.push(fullSnakes[closestEnemySnake][0][0] - fullSnakes[closestEnemySnake][1][0]);
+          potentialPoint.push(fullSnakes[closestEnemySnake][0][1] - fullSnakes[closestEnemySnake][1][1]);
+
+          potentialPoint[0] = fullSnakes[closestEnemySnake][0][0] + (potentialPoint[0] * 2);
+          potentialPoint[1] = fullSnakes[closestEnemySnake][0][1] + (potentialPoint[1] * 2);
+
+          if (potentialPoint[0] != fullSnakes[closestEnemySnake][0][0]){
+            killPointOne = [potentialPoint[0],potentialPoint[1]+1];
+            killPointTwo = [potentialPoint[0],potentialPoint[1]-1];
+          }
+          else {
+            killPointOne = [potentialPoint[0]+1,potentialPoint[1]];
+            killPointTwo = [potentialPoint[0]-1,potentialPoint[1]];
+          }
+          console.log(getDistance(head,killPointTwo),killPointOne);
+
+          if (!isItAWall(killPointTwo,graph) && (isItAWall(killPointOne,graph) || getDistance(head,killPointTwo) < 2)){
+            console.log("going in for the kill!");
+            goals.unshift(killPointTwo);
+          }
+          else if (!isItAWall(killPointOne,graph) && (isItAWall(killPointTwo,graph) || getDistance(head,killPointOne) < 2)){
+            console.log("going in for the kill!");
+            goals.unshift(killPointOne);
+          }
+
+
+      }
+
+
+    }
+
     //Pick which food to go after
 
     for (var i = 0; i<goals.length;i++){
@@ -918,15 +990,15 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
     }
 
-    for (var i = 0; i <snakeHeads.length; i++){
-      if (getDistance(snakeHeads[i],head) < closestSnakeDistance){
-        closestSnake = snakeHeads[i];
-        closestSnakeDistance = getDistance(snakeHeads[i],head);
+    for (var i = 0; i <fullSnakes.length; i++){
+      if (getDistance(fullSnakes[i][0],head) < closestSnakeDistance){
+        closestSnake = fullSnakes[i][0];
+        closestSnakeDistance = getDistance(fullSnakes[i][0],head);
       }
     }
 
-    //Attempt to wrap food if health is high enough
-    if (health > 50 && getDistance(head,goals[endGoal]) == 1 && ownBody.length>8){
+    //Attempt to wrap food if health is high enough && enemy won't eat it before we wrap it
+    if (health > 50 && getDistance(head,goals[endGoal]) == 1 && ownBody.length>8 && !isFoodCloseToEnemy(goals[endGoal],fullSnakes,head)){
 
       if (isFoodWrapped(goals[endGoal],graph,head) > 1 && isFoodWrapped(goals[endGoal],graph,head) < 4){
         console.log("Continuing wrap");
@@ -1066,8 +1138,6 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         nextPoint=[head[0],head[1]+1];
       }
     }
-
-    console.log(nextPoint);
     return nextPoint;
 
 }

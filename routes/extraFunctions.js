@@ -21,21 +21,21 @@ var createBaseSnake = function(requestBody,isStatic){
   var badSnakes = [];
   var thingsThatWillDisappear = [];
   var goalFood = [];
-  var snakeHeads = [];
+  var fullSnakes = [];
   var moveNode = [];
 
   requestBody.snakes.splice(indexOfBody,1);
 
   for (var i = 0; i< requestBody.snakes.length; i++){
+     fullSnakes.push(requestBody.snakes[i].coords);
      badSnakes = badSnakes.concat(requestBody.snakes[i].coords);
-     snakeHeads.push(requestBody.snakes[i].coords[0]);
   }
 
   thingsThatWillDisappear = thingsThatWillDisappear.concat(disappearByTimeSnakeGetsThere(head,body.coords));
   goalFood = reorganizeFood(requestBody.food,head);
 
   if (!isStatic){
-    moveNode = aStarSnakes.astarSnake(requestBody.width,requestBody.height,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points,snakeHeads);
+    moveNode = aStarSnakes.astarSnake(requestBody.width,requestBody.height,goalFood,badSnakes,body.coords,thingsThatWillDisappear,body.health_points,fullSnakes);
 
   }
   else {
