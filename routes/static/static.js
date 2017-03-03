@@ -1,79 +1,116 @@
-var aStarSnakes = require("../a_star/a_start.js");
+var aStar = require("../a_star/a_start.js");
 
-function staticSnakeController(ownBody,height,width,food,otherSnake,distance){
-    var graph = [];
-    var goal = [];
-    otherSnake = otherSnake || [];
+function staticSnakeController(ownBody, height, width, food, sharkBody, distance) {
+  console.log("------------REMORA------------------");
 
-    for(var x = 0; x < width; x++){
-        var row = [];
-        for (var y = 0; y < height; y++){
-                row.push(1);
-        }
-        graph.push(row);
-    }
-    for (var i = 1; i< ownBody.length; i++){
-        graph[ownBody[i][0]][ownBody[i][1]] = 0;
-    }
-    graph[ownBody[0][0]][ownBody[0][1]] = 2;
-    for (var i = 0; i< otherSnake.length-1; i++){
-        graph[otherSnake[i][0]][otherSnake[i][1]] = 0;
-    }
+  var graph = [],
+      goal = [],
+      result;
 
-    if (distance < 6 && ownBody.length >= 4){
-        goal = besideHead(otherSnake,graph);
-    }
-    else if (ownBody.length < 5 || (ownBody[ownBody.length-1][0] == ownBody[ownBody.length-2][0] && ownBody[ownBody.length-1][1] == ownBody[ownBody.length-2][1])){
-        goal = food;
-    }
-    if (goal.length < 1){
-        goal = ownBody[ownBody.length-1];
-        graph[ownBody[ownBody.length-1][0]][ownBody[ownBody.length-1][1]] = 1;
-    }
+  sharkBody = sharkBody || [];
 
-    console.log(goal)
+  for (var x = 0; x < width; x++) {
+    var row = [];
+    for (var y = 0; y < height; y++) {
+      row.push(1);
+    }
+    graph.push(row);
+  }
+  for (var i = 1; i < ownBody.length; i++) {
+    graph[ownBody[i][0]][ownBody[i][1]] = 0;
+  }
+  graph[ownBody[0][0]][ownBody[0][1]] = 2;
+  for (var i = 0; i < sharkBody.length - 1; i++) {
+    graph[sharkBody[i][0]][sharkBody[i][1]] = 0;
+  }
 
-    result = aStarSnakes.aStar(graph,goal,ownBody[0]);
+  graph = aStar.addArrayToGraph(graph,aStar.findAreaAroundPoint(sharkBody[0],height,width),0);
 
-    return result;
+  if (ownBody.length >= 5) {
+    var startingPoint = sharkBody.length <= 7 ? (Math.floor(sharkBody.length / 2)) - 1 : 3;
+
+    console.log('Calculating Suction Point');
+    result = getSuctionPoint(graph, sharkBody, startingPoint,ownBody[0]);
+  }
+  else{
+    result = aStar.aStar(graph, food, ownBody[0]);
+    result = result.nextPoint;
+  }
+
+  console.log(result);
+
+  console.log('------------------------------------');
+  return result;
 }
 
-var besideHead = function(otherSnake,graph){
+var getSuctionPoint = function(graph,sharkBody,startingIndex,head){
 
-    if (otherSnake[0][1] == otherSnake[1][1]){
-        console.log("Horizontal!");
-        return returnClearSide(otherSnake[0],graph,false);
-    }
-    else {
-        console.log("Vertical!");
-        return returnClearSide(otherSnake[0],graph,true);
-    }
+    var pointsChecked = [],
+        pointsToCheck, pointToCheck, i, j, result;
 
-}
-
-var returnClearSide = function(point,graph,x){
-
-    x = x || false;
-
-    if (x){
-        if (point[0]+1 > 0 && point[0]+1 < graph.length && graph[point[0]+1][point[1]] == 1){
-            return [point[0]+1,point[1]];
+    for(i = 0; i < graph.length; i++){
+        var newRow = [];
+        for(j = 0; j < graph[0].length; j++){
+            newRow.push(false);
         }
-        if (point[0]-1 > 0 && point[0]-1 < graph.length && graph[point[0]-1][point[1]] == 1){
-            return [point[0]-1,point[1]];
-        }
-    }
-    else {
-        if (point[1]+1 > 0 && point[1]+1 < graph[0].length && graph[point[0]][point[1]+1] == 1){
-            return [point[0],point[1]+1];
-        }
-        if (point[1]-1 > 0 && point[1]-1 < graph[0].length && graph[point[0]][point[1]-1] == 1){
-            return [point[0],point[1]-1];
-        }
+        pointsChecked.push(newRow);
     }
 
-    return [-1,-1];
-}
+    for(i = 0; i <= Math.floor(sharkBody.length / 2); i++){
+        var potentialPaths = [],
+            shortestPath = 0,
+            nextPoint = [];
+
+        if(startingIndex - i > 0){
+          pointsToCheck = getClearSides(sharkBody[startingIndex - i],graph);
+          for(j = 0;j < pointsToCheck.length; j++){
+            pointToCheck = pointsToCheck[j];
+            if(pointsChecked[pointToCheck[0]][pointToCheck[1]] !== true){
+              pointsChecked[pointToCheck[0]][pointToCheck[1]] = true;
+              result = aStar.aStar(graph,pointToCheck,head);
+              potentialPaths.push(result);
+            }
+          }
+        }
+        if(startingIndex + i < sharkBody.length && startingIndex + i > 0){
+          for(j = 0;j < pointsToCheck.length; j++){
+            pointToCheck = pointsToCheck[j];
+            if(pointsChecked[pointToCheck[0]][pointToCheck[1]] !== true){
+              pointsChecked[pointToCheck[0]][pointToCheck[1]] = true;
+              result = aStar.aStar(graph,pointToCheck,head);
+              potentialPaths.push(result);
+            }
+          }
+        }
+
+        for(j = 0;j < potentialPaths.length;j++){
+            var potentialPath = potentialPaths[j];
+            if(potentialPath.pathLength > 0){
+                if(shortestPath == 0 || potentialPath.pathLength < shortestPath){
+                    shortestPath = potentialPath.pathLength;
+                    nextPoint = potentialPath.nextPoint;
+                }
+            }
+        }
+        if(nextPoint.length > 0){
+            return nextPoint;
+        }
+    }
+};
+
+var getClearSides = function(point, graph){
+
+    var allSides = aStar.findAreaAroundPoint(point,graph.length,graph[0].length),
+        clearSides = [];
+    for(var i = 0; i < allSides.length; i++){
+        var sideToCheck = allSides[i];
+        if(graph[sideToCheck[0]][sideToCheck[1]] !== 0){
+            clearSides.push(sideToCheck);
+        }
+    }
+
+    return clearSides;
+};
 
 var staticSnakes = {
 

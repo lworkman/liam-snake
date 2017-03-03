@@ -1074,13 +1074,20 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
 
 var aStarPathing = function(graph,goal,start){
 
+  var result = {
+    pathLength : 0,
+    nextPoint : []
+  };
 
   var graphObject = new Graph(graph);
   var graphStart = graphObject.grid[start[0]][start[1]];
   var graphEnd = graphObject.grid[goal[0]][goal[1]];
 
-  var result = astar.search(graphObject,graphStart,graphEnd);
-  return [result[0].x,result[0].y];
+  var goalPath = astar.search(graphObject,graphStart,graphEnd);
+  result.pathLength = goalPath.length;
+  result.nextPoint = (goalPath.length > 0) ? [goalPath[0].x,goalPath[0].y] : [];
+
+  return result;
 }
 
 // javascript-astar 0.4.1
@@ -1098,7 +1105,13 @@ var astarSnakes = {
 
     aStar: function(graph,goal,start){
       return aStarPathing(graph,goal,start);
-    }
+    },
+
+    getMoveVector: getMoveVector,
+
+    findAreaAroundPoint: findAreaAroundPoint,
+
+    addArrayToGraph: addArrayToGraph,
 
 }
 

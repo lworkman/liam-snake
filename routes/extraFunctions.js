@@ -177,7 +177,6 @@ var disappearByTimeSnakeGetsThere = function(head,obstacles){
 
 var remoraTaunt = function(requestBody){
   id = requestBody.you;
-  console.log(body);
   var length = body.coords.length;
 
   if (length < 10){
@@ -186,7 +185,7 @@ var remoraTaunt = function(requestBody){
   else {
     return "I'm full!"
   }
-}
+};
 
 var differentSnakes = {
 
