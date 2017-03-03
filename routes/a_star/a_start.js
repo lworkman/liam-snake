@@ -723,6 +723,13 @@ var checkIfByThing = function(point,thing){
 
 }
 
+var isFoodInCorner = function(food,graph){
+  if ((food[0] == 0 || food[0] == graph.length - 1) && (food[1] == 0 || food[1] == graph[0].length - 1)){
+    return true;
+  }
+  return false;
+}
+
 var isFoodWrapped = function(food, graph, head){
   
   var graphCopy = [];
@@ -810,7 +817,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     // Opens a tunnel for wrapped food
 
     for (var i = 0; i<goals.length; i++){
-      if (isFoodWrapped(goals[i],graph,head) >2 && health > 10 && ownBody.length>8){
+      if ((isFoodWrapped(goals[i],graph,head) >2 || isFoodInCorner(goals[i],graph)) && health > 10 && ownBody.length>8){
         graph[goals[i][0]][goals[i][1]] = 0;
 
         var direction = "";
