@@ -73,6 +73,7 @@ var getSuctionPoint = function(graph,sharkBody,startingIndex,head){
           }
         }
         if(startingIndex + i < sharkBody.length && startingIndex + i > 0){
+            pointsToCheck = getClearSides(sharkBody[startingIndex + i],graph);
           for(j = 0;j < pointsToCheck.length; j++){
             pointToCheck = pointsToCheck[j];
             if(pointsChecked[pointToCheck[0]][pointToCheck[1]] !== true){

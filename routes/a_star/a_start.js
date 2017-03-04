@@ -784,7 +784,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     var closestSnakeDistance = 100;
     ownBody.splice(0,1);
 
-    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 15, "nearWalls": 9, "ownBody": 0, "tunnel": -2, "danger": -1, "food": 1, "foodTrap": 30};
+    var priority = {"empty": 2, "full": 0, "nearSelf": 1, "nearOthers": 15, "nearWalls": 9, "ownBody": 0, "tunnel": -2, "danger": -1, "food": 1, "foodTrap": 30, "snakeHeads": -4};
     for(var x = 0; x < width; x++){
         var row = [];
         for (var y = 0; y < height; y++){
@@ -808,14 +808,9 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     graph = addArrayToGraph(graph,areaAroundSelf,priority.nearSelf);
     graph = addArrayToGraph(graph,areaAroundFood,priority.food);
     graph = addArrayToGraph(graph,areaAroundOtherSnakes,priority.nearOthers);
+    graph = addArrayToGraph(graph,goals,priority.food);
     graph = addArrayToGraph(graph,ownBody,priority.ownBody);
     graph = addArrayToGraph(graph,badSnakes,priority.full);
-    graph = addArrayToGraph(graph,goals,priority.empty);
-    
-    for(var i = 0; i < fullSnakes.length; i++){
-      var areaAroundSnakeHeads = findAreasAroundCoorArray([fullSnakes[i][0]],height,width);
-      graph = addArrayToGraph(graph,areaAroundSnakeHeads,priority.full);
-    }
 
     //graph = addArrayToGraph(graph,thingsThatWillDisappear,priority.empty);
 
@@ -829,6 +824,10 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     }
     else {
       graph = addArrayToGraph(graph,tunnels,priority.tunnel);
+    }
+    for(var i = 0; i < fullSnakes.length; i++){
+      var areaAroundSnakeHeads = findAreasAroundCoorArray([fullSnakes[i][0]],height,width);
+      graph = addArrayToGraph(graph,areaAroundSnakeHeads,priority.full);
     }
 
     // Opens a tunnel for wrapped food
@@ -880,50 +879,54 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
       }
     }
 
-    var graphObject = new Graph(graph);
-
-    var start = graphObject.grid[head[0]][head[1]];
-
     //Go on the offensive
+    //First find nearest enemy that isn't moving away.
+    var enemyDistance = 25;
+    var closestEnemySnake = -1;
 
-    if (health > 75 && ownBody.length > 6){
+    for(var i = 0; i<fullSnakes.length; i++){
 
-      //First find nearest enemy that isn't moving away.
-      var enemyDistance = 25;
-      var closestEnemySnake = -1;
+      var enemyHeadDistance = getDistance(head,fullSnakes[i][0]);
+      var enemyNeckDistance = getDistance(head,fullSnakes[i][1]);
 
-      for(var i = 0; i<fullSnakes.length; i++){
-
-        var enemyHeadDistance = getDistance(head,fullSnakes[i][0]);
-        var enemyNeckDistance = getDistance(head,fullSnakes[i][1]);
-
-        if (enemyHeadDistance < enemyDistance && enemyHeadDistance < enemyNeckDistance){
-          closestEnemySnake = i;
-        }
+      if (enemyHeadDistance < enemyDistance && enemyHeadDistance < enemyNeckDistance){
+        closestEnemySnake = i;
       }
+    }
 
-      if (closestEnemySnake != -1){
+    if (closestEnemySnake != -1){
 
-          var potentialPoint = [];
-          var killPointOne = [];
-          var killPointTwo = [];
+        var potentialPoint = [];
+        var killPointOne = [];
+        var killPointTwo = [];
+        var killPointThree = [];
 
-          potentialPoint.push(fullSnakes[closestEnemySnake][0][0] - fullSnakes[closestEnemySnake][1][0]);
-          potentialPoint.push(fullSnakes[closestEnemySnake][0][1] - fullSnakes[closestEnemySnake][1][1]);
+        potentialPoint.push(fullSnakes[closestEnemySnake][0][0] - fullSnakes[closestEnemySnake][1][0]);
+        potentialPoint.push(fullSnakes[closestEnemySnake][0][1] - fullSnakes[closestEnemySnake][1][1]);
 
-          potentialPoint[0] = fullSnakes[closestEnemySnake][0][0] + (potentialPoint[0] * 2);
-          potentialPoint[1] = fullSnakes[closestEnemySnake][0][1] + (potentialPoint[1] * 2);
+        killPointThree.push(fullSnakes[closestEnemySnake][0][0] + potentialPoint[0]);
+        killPointThree.push(fullSnakes[closestEnemySnake][0][1] + potentialPoint[1]);
 
-          if (potentialPoint[0] != fullSnakes[closestEnemySnake][0][0]){
-            killPointOne = [potentialPoint[0],potentialPoint[1]+1];
-            killPointTwo = [potentialPoint[0],potentialPoint[1]-1];
-          }
-          else {
-            killPointOne = [potentialPoint[0]+1,potentialPoint[1]];
-            killPointTwo = [potentialPoint[0]-1,potentialPoint[1]];
-          }
-          console.log(getDistance(head,killPointTwo),killPointOne);
+        if (!isItAWall(killPointThree,graph) && fullSnakes[closestEnemySnake].length < ownBody.length + 1){
+          goals.unshift(killPointThree);
+        }
+        else if (!isItAWall(killPointThree,graph)) {
+          graph[killPointThree[0]][killPointThree[1]] = 0;
+        }
 
+        potentialPoint[0] = fullSnakes[closestEnemySnake][0][0] + (potentialPoint[0] * 2);
+        potentialPoint[1] = fullSnakes[closestEnemySnake][0][1] + (potentialPoint[1] * 2);
+
+        if (potentialPoint[0] != fullSnakes[closestEnemySnake][0][0]){
+          killPointOne = [potentialPoint[0],potentialPoint[1]+1];
+          killPointTwo = [potentialPoint[0],potentialPoint[1]-1];
+        }
+        else {
+          killPointOne = [potentialPoint[0]+1,potentialPoint[1]];
+          killPointTwo = [potentialPoint[0]-1,potentialPoint[1]];
+        }
+
+        if (health > 75 && ownBody.length + 1 > 6){
           if (!isItAWall(killPointTwo,graph) && (isItAWall(killPointOne,graph) || getDistance(head,killPointTwo) < 2)){
             console.log("going in for the kill!");
             goals.unshift(killPointTwo);
@@ -932,13 +935,12 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
             console.log("going in for the kill!");
             goals.unshift(killPointOne);
           }
-
-
-      }
-
-
+        }
     }
 
+    var graphObject = new Graph(graph);
+
+    var start = graphObject.grid[head[0]][head[1]];
     //Pick which food to go after
 
     for (var i = 0; i<goals.length;i++){
@@ -955,6 +957,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         nextPoint = [result[0].x,result[0].y];
         pathLength = result.length;
         endGoal = i;
+        console.log(goals[endGoal]);
       }
     }
 
@@ -998,7 +1001,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
     }
 
     //Attempt to wrap food if health is high enough && enemy won't eat it before we wrap it
-    if (health > 50 && getDistance(head,goals[endGoal]) == 1 && ownBody.length>8 && !isFoodCloseToEnemy(goals[endGoal],fullSnakes,head)){
+    if (health > 50 && getDistance(head,goals[endGoal]) == 1 && ownBody.length>8 && !isFoodCloseToEnemy(goals[endGoal],fullSnakes,head) && graph[goals[endGoal][0]][goals[endGoal][1]] == priority.food){
 
       if (isFoodWrapped(goals[endGoal],graph,head) > 1 && isFoodWrapped(goals[endGoal],graph,head) < 4){
         console.log("Continuing wrap");
@@ -1063,7 +1066,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
           }
         }
         //CASE 1.2: If not, try to move in same direction
-        else if(sameDirectionWeight > 0){
+        else if(sameDirectionWeight != 0){
           console.log('1.2');
           nextPoint = sameDirectionMove;
         }
@@ -1099,7 +1102,7 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         }
 
         //CASE 2.1: Can we go straight?
-        if(sameDirectionWeight > 0 && findHowManyFreeNodesV2(sameDirectionMove,head,graph) > ownBody.length/2 && !willBlockWholeBoard){
+        if(sameDirectionWeight != 0 && findHowManyFreeNodesV2(sameDirectionMove,head,graph) > ownBody.length/2 && !willBlockWholeBoard){
             console.log('2.1');
             nextPoint = sameDirectionMove;
         }else{
@@ -1113,12 +1116,12 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
               secondToCheck = backupArea1 > backupArea2 ? backupMove2 : backupMove1;
           console.log(backupMove1,backupArea1);
           console.log(backupMove2,backupArea2);
-          if(getWeightByCoordinates(graphObject,firstToCheck[0],firstToCheck[1],width,height) > 0){
+          if(getWeightByCoordinates(graphObject,firstToCheck[0],firstToCheck[1],width,height) != 0){
             nextPoint = firstToCheck;
-          } else if(getWeightByCoordinates(graphObject,secondToCheck[0],secondToCheck[1],width,height) > 0){
+          } else if(getWeightByCoordinates(graphObject,secondToCheck[0],secondToCheck[1],width,height) != 0){
             nextPoint = secondToCheck;
           } else {
-            nextPoint = firstToCheck;
+            nextPoint = sameDirectionMove;
           }
 
         }
@@ -1138,7 +1141,9 @@ function findShortestPathWithLevels(width,height,goals,badSnakes,ownBody,thingsT
         nextPoint=[head[0],head[1]+1];
       }
     }
+    console.log(graph[nextPoint[0]][nextPoint[1]],nextPoint);
     return nextPoint;
+
 
 }
 

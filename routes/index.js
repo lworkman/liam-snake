@@ -12,11 +12,11 @@ router.get('/head-image', function(req,res){
         }
     };
 
-    res.sendFile('wasonceaman.jpg',options,function(err){
+    res.sendFile('wasOnceAMan.gif',options,function(err){
         if(err){
             console.log(err);
         }else{
-            console.log('Sent: wasonceaman.jpg');
+            console.log('Sent: wasOnceAMan.gif');
         }
     });
 });
@@ -30,11 +30,11 @@ router.get('/remora/head-image', function(req,res){
         }
     };
 
-    res.sendFile('remora.jpg',options,function(err){
+    res.sendFile('remora.gif',options,function(err){
         if(err){
             console.log(err);
         }else{
-            console.log('Sent: remora.jpg');
+            console.log('Sent: remora.gif');
         }
     });
 });
@@ -44,7 +44,7 @@ router.post('/start', function (req, res) {
 
   // Response data
   var data = {
-    color: '#ef0087',
+    color: '#efcc87',
     name: "Was Once A Man",
     head_url: "/head-image", // optional, but encouraged!
     taunt: "Cobra LALALALALALALALALA!", // optional, but encouraged!
